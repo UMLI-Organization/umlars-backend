@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "umli-backend"
+version = "0.1.0"
+description = ""
+authors = ["filip <filip.pawlowski001@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+mkdocs = "^1.6.0"
+tox = "^4.15.0"
+black = "^24.4.2"
+pytest = "^8.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
