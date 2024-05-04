@@ -29,7 +29,10 @@ export:
 	poetry export --without-hashes --without dev -f requirements.txt -o requirements.txt
 
 start-django:
-	poetry run python src/manage.py migrate
+	poetry run python -Wd src/manage.py makemigrations
+	poetry run python -Wd src/manage.py migrate
+	poetry run python -Wd src/manage.py createsuperuser --noinput \
+	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
 	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
 .PHONY: setup setup-docker tests tox-test docs clean export
