@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import UMLModel, UMLModelMetadata
+
+admin.site.register(UMLModel)
+admin.site.register(UMLModelMetadata)
