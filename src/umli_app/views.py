@@ -53,3 +53,12 @@ def register_user(request: HttpRequest) -> HttpResponse:
         form = SignUpForm()
     
     return render(request, 'register.html', {'form': form})
+
+
+def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.user.is_authenticated:
+        uml_model = UMLModel.objects.prefetch_related('metadata').get(id=pk)
+        return render(request, 'uml-model.html', {'uml_model': uml_model})
+    else:
+        messages.warning(request, 'You need to be logged in to view this page')
+        return redirect('home')
