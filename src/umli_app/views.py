@@ -3,14 +3,17 @@ from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
+from .models import UMLModel
 from .forms import SignUpForm
 
 
 def home(request: HttpRequest) -> HttpResponse:
+
     if request.method == 'POST':
         return login_user(request)
     else:
-        return render(request, 'home.html', {})
+        uml_models = UMLModel.objects.prefetch_related('metadata').all()
+        return render(request, 'home.html', {'uml_models': uml_models})
 
 
 def login_user(request: HttpRequest) -> HttpResponse:
