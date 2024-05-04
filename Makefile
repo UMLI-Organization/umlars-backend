@@ -28,10 +28,8 @@ clean:
 export:
 	poetry export --without-hashes --without dev -f requirements.txt -o requirements.txt
 
-publish-test:
-	poetry publish --build -r test-pypi
-
-publish:
-	poetry publish --build
+start-django:
+	poetry run python src/manage.py migrate
+	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
 .PHONY: setup setup-docker tests tox-test docs clean export

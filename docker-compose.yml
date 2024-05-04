@@ -11,7 +11,7 @@ services:
         - "*"
       args:
         UMLI_IN_ENV: DEV
-    command: python -Wd src/manage.py runserver 0.0.0.0:8000
+    command: make start-django
     ports:
       - 8000:8000
     env_file:
