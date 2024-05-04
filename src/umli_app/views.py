@@ -20,8 +20,10 @@ def login_user(request: HttpRequest) -> HttpResponse:
             messages.success(request, f'Welcome {username}')
             return redirect('home')
         else:
-            messages.error(request, 'Invalid credentials')
+            messages.warning(request, 'Invalid credentials')
             return redirect('home')
 
 def logout_user(request: HttpRequest) -> HttpResponse:
-    pass
+    logout(request)
+    messages.success(request, 'You have been logged out')
+    return redirect('home')
