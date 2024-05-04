@@ -1,8 +1,32 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+    <div class="col-md-6 offset-md-3"> 
     
-    <h1>Hello there!</h1>
-    <p>Welcome to UMLI, the Unified Modeling Language Interpreter.</p>
+    {% if user.is_authenticated %}
+
+    <h1 class="mb-4 mt-4"> Hello there! </h1>
+    <p> You are logged in as {{ user.username }} </p>
+
+    {% else %}
+
+    <h1 class="mb-4 mt-4">Login</h1>
+    <form method="POST" action="{% url 'home' %}">
+        {% csrf_token %}
+        <form>
+            <div class="mb-3">
+              <input type="text" class="form-control" name="username" placeholder="Username" required>
+            </div>
+            <div class="mb-3">
+              <input type="password" class="form-control" name="password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="btn btn-secondary mt-4">Login</button>
+        </form>
+    </form>
+
+    {% endif %}
+
+    </div>
 
 {% endblock %}
