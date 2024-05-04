@@ -1,6 +1,9 @@
 setup:
 	poetry install
 
+setup-docker:
+	poetry install --no-interaction --no-ansi
+	
 test:
 	poetry run pytest
 
@@ -31,4 +34,4 @@ publish-test:
 publish:
 	poetry publish --build
 
-.PHONY: setup tests docs clean export
+.PHONY: setup setup-docker tests tox-test docs clean export
