@@ -1,7 +1,7 @@
 setup:
 	poetry install
 
-setup-docker:
+docker-setup:
 	poetry install --no-interaction --no-ansi
 	
 test:
@@ -28,7 +28,11 @@ clean:
 export:
 	poetry export --without-hashes --without dev -f requirements.txt -o requirements.txt
 
-start-django:
+django-migrate:
+	poetry run python -Wd src/manage.py makemigrations
+	poetry run python -Wd src/manage.py migrate
+
+django-start:
 	poetry run python -Wd src/manage.py makemigrations
 	poetry run python -Wd src/manage.py migrate
 	poetry run python -Wd src/manage.py createsuperuser --noinput \
