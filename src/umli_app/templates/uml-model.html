@@ -29,6 +29,10 @@
                     {% render_json uml_model.metadata.data %}
                 </div>
             </div>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Back</a>
+            <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
+            <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>
+        
         </div>
     </div>
 </div>

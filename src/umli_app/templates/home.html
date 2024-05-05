@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load json_tags %}
 
 {% block content %}
 
@@ -25,7 +26,7 @@
                   <td>{{ uml_model.name }}</td>
                   <td>{{ uml_model.file.url }}</td>
                   <td>{{ uml_model.tech_valid_from }}</td>
-                  <td>{{ uml_model.metadata.data|pprint }}</td>
+                  <td>{% render_json uml_model.metadata.data %}</td>
                   <td>
                       <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">View</a>
                       <a href="" class="btn btn-secondary">Edit</a>

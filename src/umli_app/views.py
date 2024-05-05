@@ -70,3 +70,14 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     else:
         messages.warning(request, 'You need to be logged in to view this page')
         return redirect('home')
+    
+
+def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.user.is_authenticated:
+        uml_model_to_delete = UMLModel.objects.get(id=pk)
+        uml_model_to_delete.delete()
+        messages.success(request, 'UML model has been deleted.')
+        return redirect('home')
+    else:
+        messages.warning(request, 'You need to be logged in to delete this UML model')
+        return redirect('home')
