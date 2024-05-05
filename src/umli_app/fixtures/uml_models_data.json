@@ -7,8 +7,8 @@
             "tech_valid_to": null,
             "tech_active_flag": true,
             "name": "Sample Model",
-            "file": "models/2024/05/05/sample_1.xml",
-            "file_data": "<XML content here>"
+            "source_file": "models/2024/05/05/sample_1.xml",
+            "formatted_data": "<E.g. Json content here>"
         }
     },
     {
@@ -19,8 +19,8 @@
             "tech_valid_to": null,
             "tech_active_flag": true,
             "name": "Tornado",
-            "file": "models/2024/05/05/sample_1_aZvRkvh.xml",
-            "file_data": "Some data that is not really XMI"
+            "source_file": "models/2024/05/05/sample_1_aZvRkvh.xml",
+            "formatted_data": "Some data that is not really XMI"
         }
     },
     {
@@ -31,8 +31,8 @@
             "tech_valid_to": null,
             "tech_active_flag": true,
             "name": "Filip Pawłowski",
-            "file": "models/2024/05/05/sample_1_VrdcCq1.xml",
-            "file_data": ""
+            "source_file": "models/2024/05/05/sample_1_VrdcCq1.xml",
+            "formatted_data": ""
         }
     },
     {
@@ -43,8 +43,8 @@
             "tech_valid_to": null,
             "tech_active_flag": true,
             "name": "Majmodel",
-            "file": "models/2024/05/05/MODEL_XMI_jmugPLd.xml",
-            "file_data": ""
+            "source_file": "models/2024/05/05/MODEL_XMI_jmugPLd.xml",
+            "formatted_data": ""
         }
     },
     {
@@ -55,8 +55,8 @@
             "tech_valid_to": null,
             "tech_active_flag": true,
             "name": "Lasmod",
-            "file": "models/2024/05/05/sample_1_LWIYHCC.xml",
-            "file_data": ""
+            "source_file": "models/2024/05/05/sample_1_LWIYHCC.xml",
+            "formatted_data": ""
         }
     },
     {

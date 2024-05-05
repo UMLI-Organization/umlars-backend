@@ -22,11 +22,12 @@ class SCD2Model(models.Model):
 class UMLModel(SCD2Model):
     """Model representing a UML diagram."""
     name = models.CharField(max_length=200)
-    file = models.FileField(upload_to="models/%Y/%m/%d/")
-    file_data = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    source_file = models.FileField(upload_to="models/%Y/%m/%d/", blank=True, null=True)
+    formatted_data = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name} - file: {self.file.url}"
+        return f"{self.name} - file: {self.source_file.url}"
 
 
 class UMLModelMetadata(SCD2Model):

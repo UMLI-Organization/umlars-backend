@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django import forms
 from django.utils.safestring import mark_safe
 
+from .models import UMLModel
+
 class SignUpForm(UserCreationForm):
     email = forms.EmailField(max_length=254, label="", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '*Email Address'}))
     first_name = forms.CharField(max_length=50, label="", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}), required=False)
@@ -32,3 +34,25 @@ class SignUpForm(UserCreationForm):
         self.fields['password2'].label = ''
         self.fields['password2'].help_text = mark_safe('<span class="form-text text-muted"><small>Enter the same password as before, for verification.</small></span>')	
 
+
+
+class AddUMLModel(forms.ModelForm):
+    name = forms.CharField(label="", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Model Name'}), required=True)
+    description = forms.CharField(label="", widget=forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Description'}), required=False)
+    source_file = forms.FileField(label="", widget=forms.FileInput(attrs={'class': 'form-control-file'}), required=False)
+    formatted_data = forms.CharField(label="", widget=forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Formatted Data'}), required=False)
+
+    class Meta:
+        model = UMLModel
+        fields = ('name', 'description', 'source_file', 'formatted_data')
+
+    def clean(self) -> dict:
+        cleaned_data = super().clean()
+        source_file = cleaned_data.get('source_file')
+        formatted_data = cleaned_data.get('formatted_data')
+
+        # Ensure at least one of the fields is filled
+        if not source_file and not formatted_data:
+            raise forms.ValidationError("You must provide either a source file or formatted data.")
+
+        return cleaned_data

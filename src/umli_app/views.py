@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
 from .models import UMLModel
-from .forms import SignUpForm
+from .forms import SignUpForm, AddUMLModel
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -60,11 +60,15 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         uml_model = UMLModel.objects.prefetch_related('metadata').get(id=pk)
         
         # Read and decode the file content
-        xml_content = uml_model.file.read().decode('utf-8')
+        # TODO: redo after final file format decision
+        try:
+            xml_content = uml_model.source_file.read().decode('utf-8')
 
-        import xml.dom.minidom as minidom
-        # Pretty-print the XML content
-        pretty_xml = minidom.parseString(xml_content).toprettyxml(indent="  ")
+            import xml.dom.minidom as minidom
+            # Pretty-print the XML content
+            pretty_xml = minidom.parseString(xml_content).toprettyxml(indent="  ")
+        except ValueError:
+            pretty_xml = uml_model.formatted_data
         
         return render(request, 'uml-model.html', {'uml_model': uml_model, 'pretty_xml': pretty_xml})
     else:
@@ -81,3 +85,23 @@ def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     else:
         messages.warning(request, 'You need to be logged in to delete this UML model')
         return redirect('home')
+    
+    
+def add_uml_model(request: HttpRequest) -> HttpResponse:
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            form = AddUMLModel(request.POST, request.FILES)
+            if request.method == 'POST':
+                if form.is_valid():
+                    added_uml_model = form.save()
+                    messages.success(request, 'UML model has been added.')
+                    return redirect('home')
+        else:
+            form = AddUMLModel()
+    
+        return render(request, 'add-uml-model.html', {'form': form})
+    else:
+        messages.warning(request, 'You need to be logged in to add a UML model')
+        return redirect('home')
+    
+    
