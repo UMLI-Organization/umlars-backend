@@ -108,3 +108,19 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
     else:
         messages.warning(request, "You need to be logged in to add a UML model")
         return redirect("home")
+
+
+
+def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.user.is_authenticated:
+        uml_model_to_update = UMLModel.objects.get(id=pk)
+        form = AddUMLModel(request.POST or None, request.FILES or None, instance=uml_model_to_update)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "UML model has been updated.")
+            return redirect("home")
+        return render(request, "update-uml-model.html", {"form": form})
+    else:
+        messages.warning(request, "You need to be logged in to update this UML model")
+        return redirect("home")
+

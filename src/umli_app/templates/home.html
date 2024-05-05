@@ -37,7 +37,7 @@
                   <td>{% render_json uml_model.metadata.data %}</td>
                   <td>
                       <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">View</a>
-                      <a href="" class="btn btn-secondary">Edit</a>
+                      <a href="{% url 'update-uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
                       <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>
                   </td>
               </tr>

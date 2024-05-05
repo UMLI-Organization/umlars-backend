@@ -10,5 +10,6 @@ urlpatterns = [
     path("register/", views.register_user, name="register"),
     path("uml-model/<int:pk>", views.uml_model, name="uml-model"),
     path("delete-uml-model/<int:pk>", views.delete_uml_model, name="delete-uml-model"),
+    path("update-uml-model/<int:pk>", views.update_uml_model, name="update-uml-model"),
     path("add-uml-model/", views.add_uml_model, name="add-uml-model"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
