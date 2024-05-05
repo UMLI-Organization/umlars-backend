@@ -130,6 +130,11 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# File upload settings
+MEDIA_ROOT = 'uploads/'
+MEDIA_URL  = '/uploads/'
+
+# Message tags
 MESSAGE_TAGS = {
     messages_constants.ERROR: "error alert-danger",
 }

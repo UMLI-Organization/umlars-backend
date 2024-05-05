@@ -1,0 +1,35 @@
+[
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 1,
+        "fields": {
+            "name": "Sample Model",
+            "file": "models/2024/05/05/sample_1.xml",
+            "file_data": "<XML content here>",
+            "tech_valid_from": "2024-05-05T08:11:48.370Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true
+        }
+    },
+    {
+        "model": "umli_app.umlmodelmetadata",
+        "pk": 1,
+        "fields": {
+            "model": 1,
+            "data": {
+                "diagrams": [
+                    {
+                        "diagram_name": "Class Diagram",
+                        "element_types": {"classes": 7, "associations": 3},
+                        "total_elements": 10
+                    }
+                ],
+                "total_diagrams": 1,
+                "total_elements": 10
+            },
+            "tech_valid_from": "2024-05-05T08:12:32.431Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true
+        }
+    }
+]

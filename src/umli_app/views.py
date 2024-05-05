@@ -58,7 +58,15 @@ def register_user(request: HttpRequest) -> HttpResponse:
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         uml_model = UMLModel.objects.prefetch_related('metadata').get(id=pk)
-        return render(request, 'uml-model.html', {'uml_model': uml_model})
+        
+        # Read and decode the file content
+        xml_content = uml_model.file.read().decode('utf-8')
+
+        import xml.dom.minidom as minidom
+        # Pretty-print the XML content
+        pretty_xml = minidom.parseString(xml_content).toprettyxml(indent="  ")
+        
+        return render(request, 'uml-model.html', {'uml_model': uml_model, 'pretty_xml': pretty_xml})
     else:
         messages.warning(request, 'You need to be logged in to view this page')
         return redirect('home')

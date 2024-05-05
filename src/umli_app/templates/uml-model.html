@@ -1,8 +1,35 @@
 {% extends 'base.html' %}
+{% load json_tags %}
 
 {% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ uml_model.name }} UML Model</h1>
 
+    <div class="row">
+        <!-- XML Content Column -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">File Content</h4>
+                    URL: 127.0.0.1:8000{{ uml_model.file.url }}
+                </div>
+                <div class="card-body">
+                    <pre class="language-xml"><code>{{ pretty_xml }}</code></pre>
+                </div>
+            </div>
+        </div>
 
-<h1 class="mb-4 mt-4">UML Models</h1>
-
+        <!-- Metadata Sidebar -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="card-title mb-0">Metadata Statistics</h4>
+                </div>
+                <div class="card-body">
+                    {% render_json uml_model.metadata.data %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
