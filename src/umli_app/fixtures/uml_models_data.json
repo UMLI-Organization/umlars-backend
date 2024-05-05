@@ -1,0 +1,176 @@
+[
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 1,
+        "fields": {
+            "tech_valid_from": "2024-05-05T08:11:48.370Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Sample Model",
+            "source_file": "models/2024/05/05/sample_1.xml",
+            "formatted_data": "<E.g. Json content here>"
+        }
+    },
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 2,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:12.321Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Tornado",
+            "source_file": "models/2024/05/05/sample_1_aZvRkvh.xml",
+            "formatted_data": "Some data that is not really XMI"
+        }
+    },
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 3,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:18.822Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Filip Pawłowski",
+            "source_file": "models/2024/05/05/sample_1_VrdcCq1.xml",
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 4,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:28.690Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Majmodel",
+            "source_file": "models/2024/05/05/MODEL_XMI_jmugPLd.xml",
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umli_app.umlmodel",
+        "pk": 5,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:37.674Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Lasmod",
+            "source_file": "models/2024/05/05/sample_1_LWIYHCC.xml",
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umli_app.umlmodelmetadata",
+        "pk": 1,
+        "fields": {
+            "tech_valid_from": "2024-05-05T08:12:32.431Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "model": 1,
+            "data": {
+                "diagrams": [
+                    {
+                        "diagram_name": "Class Diagram",
+                        "element_types": {
+                            "classes": 7,
+                            "associations": 3
+                        },
+                        "total_elements": 10
+                    }
+                ],
+                "total_diagrams": 1,
+                "total_elements": 10
+            }
+        }
+    },
+    {
+        "model": "umli_app.umlmodelmetadata",
+        "pk": 2,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:22:47.281Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "model": 4,
+            "data": {
+                "diagrams": [
+                    {
+                        "diagram_name": "Class Diagram",
+                        "element_types": {
+                            "classes": 8,
+                            "interfaces": 2,
+                            "associations": 2
+                        },
+                        "total_elements": 12
+                    },
+                    {
+                        "diagram_name": "Use Case Diagram",
+                        "element_types": {
+                            "actors": 2,
+                            "use_cases": 3
+                        },
+                        "total_elements": 5
+                    },
+                    {
+                        "diagram_name": "Sequence Diagram",
+                        "element_types": {
+                            "messages": 2,
+                            "lifelines": 5
+                        },
+                        "total_elements": 7
+                    },
+                    {
+                        "diagram_name": "State Machine Diagram",
+                        "element_types": {
+                            "states": 4,
+                            "transitions": 2
+                        },
+                        "total_elements": 6
+                    }
+                ],
+                "total_diagrams": 4,
+                "total_elements": 30
+            }
+        }
+    },
+    {
+        "model": "umli_app.umlmodelmetadata",
+        "pk": 3,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:23:05.180Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "model": 5,
+            "data": {
+                "diagrams": [
+                    {
+                        "diagram_name": "Activity Diagram",
+                        "element_types": {
+                            "decisions": 2,
+                            "start_end": 1,
+                            "activities": 6
+                        },
+                        "total_elements": 9
+                    },
+                    {
+                        "diagram_name": "Component Diagram",
+                        "element_types": {
+                            "components": 4,
+                            "interfaces": 3
+                        },
+                        "total_elements": 7
+                    },
+                    {
+                        "diagram_name": "Deployment Diagram",
+                        "element_types": {
+                            "nodes": 3,
+                            "connections": 2
+                        },
+                        "total_elements": 5
+                    }
+                ],
+                "total_diagrams": 3,
+                "total_elements": 21
+            }
+        }
+    }
+]

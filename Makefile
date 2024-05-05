@@ -1,6 +1,9 @@
 setup:
 	poetry install
 
+docker-setup:
+	poetry install --no-interaction --no-ansi
+	
 test:
 	poetry run pytest
 
@@ -25,10 +28,24 @@ clean:
 export:
 	poetry export --without-hashes --without dev -f requirements.txt -o requirements.txt
 
-publish-test:
-	poetry publish --build -r test-pypi
+django-migrate:
+	poetry run python -Wd src/manage.py makemigrations
+	poetry run python -Wd src/manage.py migrate
 
-publish:
-	poetry publish --build
+django-start-dev:
+	poetry run python -Wd src/manage.py makemigrations
+	poetry run python -Wd src/manage.py migrate
+	poetry run python -Wd src/manage.py createsuperuser --noinput \
+	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
+	poetry run python -Wd src/manage.py loaddata src/umli_app/fixtures/uml_models_data.json
+	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
-.PHONY: setup tests docs clean export
+django-start:
+	poetry run python -Wd src/manage.py makemigrations
+	poetry run python -Wd src/manage.py migrate
+	poetry run python -Wd src/manage.py createsuperuser --noinput \
+	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
+	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
+
+
+.PHONY: setup setup-docker tests tox-test docs clean export

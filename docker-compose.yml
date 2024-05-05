@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  backend:
+    image: "umli-backend:dev"
+    build:
+      target: umli_backend_dev_build
+      context: .
+      cache_from:
+        - "umli-backend:dev"
+        - "umli-backend:latest"
+        - "*"
+      args:
+        UMLI_IN_ENV: DEV
+    # TODO: Change to production version when released
+    # command: make django-start
+    command: make django-start-dev
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+
+    # TODO: Remove this volume mapping in production 
+    volumes:
+      - .:/code
+  
+  db:
+    image: postgres:12.0-alpine
+    restart: unless-stopped
+
+    # Changing env variables won't work, if volume was already created
+    # Source: https://hub.docker.com/_/postgres#:~:text=have%20found%20useful.-,Environment%20Variables,-The%20PostgreSQL%20image
+    volumes:
+      - db_postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.dev
+    ports:
+      - 50432:5432
+
+volumes:
+  db_postgres_data:

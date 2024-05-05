@@ -1,0 +1,22 @@
+{% if form.non_field_errors %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <strong>Your Form Has Errors:</strong>
+    {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{% for field in form %}
+    <div class="form-group {% if field.errors %}has-error{% endif %}">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+            {{ field.help_text | safe }}
+        {% endif %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+{% endfor %}
