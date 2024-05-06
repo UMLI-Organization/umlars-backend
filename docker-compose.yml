@@ -21,9 +21,9 @@ services:
     depends_on:
       - db
 
-    # TODO: Remove this volume mapping in production 
-    volumes:
-      - .:/code
+    # TODO: For a production use the COPY statement in the Dockerfile instead of the below volume
+    # volumes:
+    #   - .:/code
   
   db:
     image: postgres:12.0-alpine

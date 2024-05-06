@@ -42,4 +42,4 @@ RUN make docker-setup
 
 # TODO: For a production use the below COPY statement instead of the volume in docker-compose.yml build
 # Creating folders, and files for a project:
-# COPY . /code
+COPY . /code
