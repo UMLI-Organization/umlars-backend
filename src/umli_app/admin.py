@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UMLModel, UMLModelMetadata
+from .models import UmlModel, UmlModelMetadata
 
-admin.site.register(UMLModel)
-admin.site.register(UMLModelMetadata)
+admin.site.register(UmlModel)
+admin.site.register(UmlModelMetadata)

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django import forms
 from django.utils.safestring import mark_safe
 
-from .models import UMLModel
+from .models import UmlModel
 
 
 class SignUpForm(UserCreationForm):
@@ -79,7 +79,7 @@ class SignUpForm(UserCreationForm):
         )
 
 
-class AddUMLModel(forms.ModelForm):
+class AddUmlModel(forms.ModelForm):
     name = forms.CharField(
         label="",
         widget=forms.TextInput(
@@ -108,7 +108,7 @@ class AddUMLModel(forms.ModelForm):
     )
 
     class Meta:
-        model = UMLModel
+        model = UmlModel
         fields = ("name", "description", "source_file", "formatted_data")
 
     def clean(self) -> dict:

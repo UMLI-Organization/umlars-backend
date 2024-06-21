@@ -41,7 +41,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "umli_app",
+
+    # third-party apps
+    "rest_framework",
+    "corsheaders",
+
+    # installed apps
+    "umli_app",   
 ]
 
 MIDDLEWARE = [
@@ -52,7 +58,20 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
 ]
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# TODO: remove and set correct CORS settings
+CORS_ALLOW_ALL_ORIGINS: bool
+
+
 
 ROOT_URLCONF = "umli_backend.urls"
 

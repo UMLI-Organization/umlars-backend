@@ -20,7 +20,7 @@ class SCD2Model(models.Model):
         self.save()
 
 
-class UMLModel(SCD2Model):
+class UmlModel(SCD2Model):
     """Model representing a UML diagram."""
 
     name = models.CharField(max_length=200)
@@ -32,11 +32,11 @@ class UMLModel(SCD2Model):
         return f"{self.name} - file: {self.source_file.url}"
 
 
-class UMLModelMetadata(SCD2Model):
+class UmlModelMetadata(SCD2Model):
     """Metadata for UML models, connected via a OneToOne relationship."""
 
     model = models.OneToOneField(
-        UMLModel, on_delete=models.CASCADE, related_name="metadata"
+        UmlModel, on_delete=models.CASCADE, related_name="metadata"
     )
     data = models.JSONField(default=dict)
 

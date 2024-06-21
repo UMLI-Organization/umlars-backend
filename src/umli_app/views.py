@@ -3,8 +3,8 @@ from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
-from .models import UMLModel
-from .forms import SignUpForm, AddUMLModel
+from .models import UmlModel
+from .forms import SignUpForm, AddUmlModel
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -12,7 +12,7 @@ def home(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         return login_user(request)
     else:
-        uml_models = UMLModel.objects.prefetch_related("metadata").all()
+        uml_models = UmlModel.objects.prefetch_related("metadata").all()
         return render(request, "home.html", {"uml_models": uml_models})
 
 
@@ -57,7 +57,7 @@ def register_user(request: HttpRequest) -> HttpResponse:
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model = UMLModel.objects.prefetch_related("metadata").get(id=pk)
+        uml_model = UmlModel.objects.prefetch_related("metadata").get(id=pk)
 
         # Read and decode the file content
         # TODO: redo after final file format decision
@@ -83,7 +83,7 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 
 def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model_to_delete = UMLModel.objects.get(id=pk)
+        uml_model_to_delete = UmlModel.objects.get(id=pk)
         uml_model_to_delete.delete()
         messages.success(request, "UML model has been deleted.")
         return redirect("home")
@@ -95,14 +95,14 @@ def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 def add_uml_model(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
-            form = AddUMLModel(request.POST, request.FILES)
+            form = AddUmlModel(request.POST, request.FILES)
             if request.method == "POST":
                 if form.is_valid():
                     added_uml_model = form.save()
                     messages.success(request, "UML model has been added.")
                     return redirect("home")
         else:
-            form = AddUMLModel()
+            form = AddUmlModel()
 
         return render(request, "add-uml-model.html", {"form": form})
     else:
@@ -113,8 +113,8 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
 
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model_to_update = UMLModel.objects.get(id=pk)
-        form = AddUMLModel(request.POST or None, request.FILES or None, instance=uml_model_to_update)
+        uml_model_to_update = UmlModel.objects.get(id=pk)
+        form = AddUmlModel(request.POST or None, request.FILES or None, instance=uml_model_to_update)
         if form.is_valid():
             form.save()
             messages.success(request, "UML model has been updated.")

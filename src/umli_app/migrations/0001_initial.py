@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="UMLModel",
+            name="UmlModel",
             fields=[
                 (
                     "id",
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name="UMLModelMetadata",
+            name="UmlModelMetadata",
             fields=[
                 (
                     "id",
