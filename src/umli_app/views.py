@@ -1,8 +1,10 @@
+import pika
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
+from umli_app.message_broker.utils import send_uploaded_file_message, create_message_data
 from .models import UmlModel
 from .forms import SignUpForm, AddUmlModel
 
@@ -92,6 +94,26 @@ def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("home")
 
 
+def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.user.is_authenticated:
+        try:
+            # TODO: inject with dependency injection
+            # TODO: take from env
+            connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+            channel = connection.channel()
+
+            send_uploaded_file_message(
+                channel,
+                create_message_data(
+                    id=id ,
+                )
+            )
+        except Exception as ex:
+            error_message = f"Connection with the translation service cannot be established: {ex}"
+            messages.warning(request, error_message)
+            return redirect("home")
+
+
 def add_uml_model(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
@@ -99,6 +121,8 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
             if request.method == "POST":
                 if form.is_valid():
                     added_uml_model = form.save()
+                    translate_uml_model(request, added_uml_model.id)
+                    
                     messages.success(request, "UML model has been added.")
                     return redirect("home")
         else:
@@ -116,7 +140,9 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         uml_model_to_update = UmlModel.objects.get(id=pk)
         form = AddUmlModel(request.POST or None, request.FILES or None, instance=uml_model_to_update)
         if form.is_valid():
-            form.save()
+            updated_model = form.save()
+            translate_uml_model(request, updated_model.id)
+
             messages.success(request, "UML model has been updated.")
             return redirect("home")
         return render(request, "update-uml-model.html", {"form": form})

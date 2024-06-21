@@ -38,5 +38,18 @@ services:
     ports:
       - 50432:5432
 
+  rabbitmq:
+      image: rabbitmq:3-management
+      container_name: rabbitmq
+      hostname: 'rabbitmq'
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      volumes:
+        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/mnesia/
+        - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      env_file:
+        - ./.env.dev
+      restart: always
 volumes:
   db_postgres_data:
