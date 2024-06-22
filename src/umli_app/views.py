@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
-from umli_app.message_broker.utils import send_uploaded_file_message, create_message_data
+from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from .models import UmlModel
 from .forms import SignUpForm, AddUmlModel
 

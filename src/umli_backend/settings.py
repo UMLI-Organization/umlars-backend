@@ -103,7 +103,9 @@ DATABASES = {
         "NAME": os.environ.get("DB_NAME"),
         "USER": os.environ.get("DB_USER"),
         "PASSWORD": os.environ.get("DB_PASSWORD"),
+        # For tests outside the docker compose - "HOST": "127.0.0.1",
         "HOST": os.environ.get("DB_HOST"),
+        # For tests outside the docker compose - "PORT": "50432",
         "PORT": os.environ.get("DB_PORT"),
     }
 }

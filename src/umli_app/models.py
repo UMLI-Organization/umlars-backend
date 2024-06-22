@@ -1,6 +1,8 @@
 from datetime import datetime
+from enum import Enum
 
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 class SCD2Model(models.Model):
@@ -35,10 +37,24 @@ class UmlModel(SCD2Model):
 class UmlModelMetadata(SCD2Model):
     """Metadata for UML models, connected via a OneToOne relationship."""
 
+    class TranslationState(models.TextChoices):
+        """Enum for translation state."""
+        QUEUED = "queued", _("Queued")
+        IN_PROGRESS = "in_progress", _("In progress")
+        FINISHED = "finished", _("Finished")
+        FAILED = "failed", _("Failed")
+
+
+
     model = models.OneToOneField(
         UmlModel, on_delete=models.CASCADE, related_name="metadata"
     )
     data = models.JSONField(default=dict)
+    translation_state = models.CharField(
+        max_length=50,
+        choices=TranslationState.choices,
+        default=TranslationState.QUEUED,
+    )
 
     def __str__(self) -> str:
-        return f"{self.model.name} - metadata: {self.data}"
+        return f"{self.model.name} - metadata in stat {self.translation_state}"
