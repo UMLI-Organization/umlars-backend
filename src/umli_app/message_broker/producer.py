@@ -1,7 +1,6 @@
 import json
+
 from pika.channel import Channel
-
-
 
 def create_message_data(**kwargs) -> dict:
     return kwargs

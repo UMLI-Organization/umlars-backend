@@ -4,16 +4,60 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="col-md-6 offset-md-3"> 
+    <div class="col-md-8 offset-md-2"> 
         <h1 class="mb-4 mt-4">Add UML Model</h1>
-        <form method="POST" action="{% url 'add-uml-model' %}" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
         
             {% render_form_with_errors form %}
 
+            <h4 class="mt-4">Source files:</h4>
+            <div class="formset-container" id="formset-container">
+                {{ formset.management_form }}
+                {% for form in formset %}
+                    <div class="formset-container__form-container mb-3">
+                        {% render_file_upload_form form %}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div>
+                <button type="button" id="add-file" class="btn btn-success mt-4">+ Add Another File</button>
+            </div>
             <a href="{% url 'home' %}" class="btn btn-secondary mt-4">Back</a>
-            <button type="submit" class="btn btn-primary mt-4">Add UML Model</button>
+            <button type="submit" class="btn btn-primary mt-4">Update UML Model</button>
         </form>
     </div>
 </div>
+
+<!-- Hidden template for a new form -->
+<div id="empty_form" style="display:none;">
+    <div class="formset-container__form-container mb-3">
+            {% render_file_upload_form formset.empty_form %}
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const formsetContainer = $("#formset-container");
+        const addButton = $("#add-file");
+        const totalForms = $("#id_umlfile_set-TOTAL_FORMS");
+
+        addButton.on('click', function(e) {
+            e.preventDefault();
+            // Get the current number of forms
+            let formNum = parseInt(totalForms.val());
+            // Clone the empty form template
+            let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
+            // Append the new form to the formset container
+            formsetContainer.append(newForm);
+            // Increment the total forms count
+            totalForms.val(formNum + 1);
+        });
+    });
+</script>
+
+
 {% endblock %}

@@ -27,8 +27,10 @@
                   <td>{{ uml_model.name }}</td>
                   <td>{{ uml_model.description }}</td>
                   <td>
-                    {% if uml_model.source_file %}
-                        <a href="{{ uml_model.source_file.url }}" class="link-dark">{{ uml_model.source_file.url }}</a>
+                    {% if uml_model.source_files %}
+                        {% for source_file in uml_model.source_files.all %}
+                            <a href="{{ source_file.filename }}" class="link-dark">{{ source_file.filename }}</a>
+                        {% endfor %}
                     {% else %}
                         No file provided
                     {% endif %}

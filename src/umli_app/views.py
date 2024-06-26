@@ -1,12 +1,16 @@
+from typing import Dict
+
 import pika
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
+from django.core.files.uploadedfile import UploadedFile
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.db import transaction
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
-from .models import UmlModel
-from .forms import SignUpForm, AddUmlModel
+from .models import UmlModel, UmlFile
+from .forms import SignUpForm, AddUmlModelForm, AddUmlFileForm, AddUmlFileFormset
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -14,7 +18,7 @@ def home(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         return login_user(request)
     else:
-        uml_models = UmlModel.objects.prefetch_related("metadata").all()
+        uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all()
         return render(request, "home.html", {"uml_models": uml_models})
 
 
@@ -105,7 +109,7 @@ def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
             send_uploaded_file_message(
                 channel,
                 create_message_data(
-                    id=id ,
+                    id=pk,
                 )
             )
         except Exception as ex:
@@ -117,35 +121,63 @@ def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 def add_uml_model(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
-            form = AddUmlModel(request.POST, request.FILES)
-            if request.method == "POST":
-                if form.is_valid():
+            form = AddUmlModelForm(request.POST)
+            formset = AddUmlFileFormset(request.POST, request.FILES)
+            if form.is_valid() and formset.is_valid():
+                with transaction.atomic():
                     added_uml_model = form.save()
+                    formset.instance = added_uml_model
+                    formset.save()
+
                     translate_uml_model(request, added_uml_model.id)
-                    
+
                     messages.success(request, "UML model has been added.")
                     return redirect("home")
+
         else:
-            form = AddUmlModel()
+            form = AddUmlModelForm()
+            formset = AddUmlFileFormset()
 
-        return render(request, "add-uml-model.html", {"form": form})
-    else:
-        messages.warning(request, "You need to be logged in to add a UML model")
-        return redirect("home")
+        return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+
+    return redirect("home")
 
 
+# TODO: do zmiany
+def update_uml_files(files: Dict[str, UploadedFile], associated_model: UmlModel, format: str) -> HttpResponse:
+    for file_name, file in files.items():
+        UmlFile.objects.create(
+            file=file.read(),
+            format=format,
+            filename = file_name,
+            model=associated_model
+        )
 
+    return HttpResponse("Files have been updated.")
+
+
+# TODO: prefetch files and use formset
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         uml_model_to_update = UmlModel.objects.get(id=pk)
-        form = AddUmlModel(request.POST or None, request.FILES or None, instance=uml_model_to_update)
+        form = AddUmlModelForm(request.POST or None, request.FILES or None, instance=uml_model_to_update)
         if form.is_valid():
             updated_model = form.save()
+            update_uml_files(form.cleaned_data["source_files"], form.cleaned_data["format"], updated_model)
+
             translate_uml_model(request, updated_model.id)
 
             messages.success(request, "UML model has been updated.")
             return redirect("home")
         return render(request, "update-uml-model.html", {"form": form})
+    else:
+        messages.warning(request, "You need to be logged in to update this UML model")
+        return redirect("home")
+
+
+def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
+    if request.user.is_authenticated:
+        return redirect("home")
     else:
         messages.warning(request, "You need to be logged in to update this UML model")
         return redirect("home")

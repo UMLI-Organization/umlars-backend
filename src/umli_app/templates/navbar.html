@@ -8,14 +8,24 @@
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
           {% if user.is_authenticated %}
-          
+
           <li class="nav-item">
             <a class="nav-link" href="{% url 'logout' %}">Logout</a>
           </li>
           
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'add-uml-model' %}">Upload model</a>
+            <a class="nav-link" href="{% url 'home' %}">Models</a>
           </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'add-uml-model' %}">Upload models</a>
+          </li>
+
+          
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'bulk-upload-uml-models' %}">Bulk upload models</a>
+          </li>
+
 
           {% else %}
           
@@ -29,7 +39,8 @@
 
           {% endif %}
 
-          <li class="nav-item dropdown">
+
+          <!-- <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Dropdown
             </a>
@@ -39,7 +50,7 @@
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="#">Something else here</a></li>
             </ul>
-          </li>
+          </li> -->
 
         </ul>
         <form class="d-flex" role="search">

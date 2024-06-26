@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django import forms
 from django.utils.safestring import mark_safe
 
-from .models import UmlModel
+from .models import UmlModel, UmlFile
 
 
 class SignUpForm(UserCreationForm):
@@ -79,47 +79,84 @@ class SignUpForm(UserCreationForm):
         )
 
 
-class AddUmlModel(forms.ModelForm):
+class AddUmlModelForm(forms.ModelForm):
+    class Meta:
+        model = UmlModel
+        fields = ("name", "description",)
+
     name = forms.CharField(
-        label="",
+        label="Model Name",
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Model Name"}
         ),
         required=True,
     )
     description = forms.CharField(
-        label="",
+        label="Description",
         widget=forms.Textarea(
-            attrs={"class": "form-control", "placeholder": "Description"}
+            attrs={"class": "form-control", "placeholder": "Description", 'rows':1, 'cols':1}
         ),
         required=False,
     )
-    source_file = forms.FileField(
-        label="",
-        widget=forms.FileInput(attrs={"class": "form-control-file"}),
-        required=False,
-    )
-    formatted_data = forms.CharField(
-        label="",
-        widget=forms.Textarea(
-            attrs={"class": "form-control", "placeholder": "Formatted Data"}
-        ),
-        required=False,
-    )
+    
+    
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+    
 
+class AddUmlFileForm(forms.ModelForm):
     class Meta:
-        model = UmlModel
-        fields = ("name", "description", "source_file", "formatted_data")
+        model = UmlFile
+        fields = ("data", "format")
 
+    file = forms.FileField(
+        label="Source files",
+        widget=MultipleFileInput(attrs={"class": "form-control-file", "multiple": True}),
+        required=False,
+    )
+
+    data = forms.CharField(
+        label="Raw data",
+        widget=forms.Textarea(
+            attrs={"class": "form-control", "placeholder": "Raw Data", 'rows':2, 'cols':1}
+        ),
+        required=False,
+    )
+
+    format = forms.ChoiceField(
+        label="Format",
+        choices=UmlFile.SupportedFormat.choices,
+        widget=forms.Select(attrs={"class": "form-control"}),
+        required=True,
+    )
+
+        
     def clean(self) -> dict:
         cleaned_data = super().clean()
-        source_file = cleaned_data.get("source_file")
-        formatted_data = cleaned_data.get("formatted_data")
+        source_file = cleaned_data.get("file")
+        data = cleaned_data.get("data")
 
         # Ensure at least one of the fields is filled
-        if not source_file and not formatted_data:
+        if not source_file and not data:
             raise forms.ValidationError(
                 "You must provide either a source file or formatted data."
             )
-
+        
         return cleaned_data
+    
+    def save(self, commit=True) -> UmlFile:
+        instance = super(AddUmlFileForm, self).save(commit=False)
+        if self.cleaned_data.get('file'):
+            instance.filename = self.cleaned_data['file'].name
+            instance.data = self.cleaned_data['file'].read().decode('utf-8')
+        elif self.cleaned_data.get('data'):
+            instance.data = self.cleaned_data['data']
+        if commit:
+            instance.save()
+        return instance
+
+
+AddUmlFileFormset = forms.inlineformset_factory(
+    UmlModel, UmlFile, form=AddUmlFileForm, 
+    extra=1, can_delete=True, fields=("data", "format", "file")
+)
