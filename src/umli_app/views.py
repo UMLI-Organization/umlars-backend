@@ -169,14 +169,14 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                         config_for_copies_of_forms_with_multiple_files.append(FormCopiesConfig(form_index, len(files_list), {'data': decode_files_callables, 'format': file_format, 'filename': filenames}))
 
                     messages.success(request, f"config: {config_for_copies_of_forms_with_multiple_files}")
-                    handler_for_copying_forms = create_handler_for_copying_forms(SOURCE_FILES_FORMSET_PREFIX, config_for_copies_of_forms_with_multiple_files)                        
+                    if config_for_copies_of_forms_with_multiple_files:
+                        handler_for_copying_forms = create_handler_for_copying_forms(SOURCE_FILES_FORMSET_PREFIX, config_for_copies_of_forms_with_multiple_files)                        
                     
-                    messages.success(request, f"view- before apply - request_post: {mutable_post_data}")
-                    updated_post_data = apply_to_request_post_elements(mutable_post_data, [handler_for_copying_forms], request)
-                    messages.success(request, f"view- after apply - request_post: {mutable_post_data}")
-                    messages.success(request, f"view- after apply - return_request_post: {updated_post_data}")
+                        messages.success(request, f"view- before apply - request_post: {mutable_post_data}")
+                        updated_post_data = apply_to_request_post_elements(mutable_post_data, [handler_for_copying_forms], request)
+                        messages.success(request, f"view- after apply - request_post: {mutable_post_data}")
+                        messages.success(request, f"view- after apply - return_request_post: {updated_post_data}")
 
-                    messages.success(request, f"Source files file: {files_field_name}\n Index: {form_index}")
             formset = AddUmlFileFormset(mutable_post_data)
             messages.warning(request, f"formset.is_valid() {formset.is_valid()}")
             if formset.is_valid():
@@ -184,8 +184,11 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                     added_uml_model = form.save()
                     messages.success(request, f"Post data: {mutable_post_data}")
                     formset.instance = added_uml_model
-                    formset.save()
+                    files = formset.save()
+                    messages.success(request, f"formset: {formset}")
+                    messages.success(request, f"list formset: {list(formset)}")
                     messages.success(request, f"formset.instance: {formset.instance}")
+                    messages.success(request, f"formset.save return: {files}")
                     return redirect("home")
 
         else:

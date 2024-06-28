@@ -178,7 +178,7 @@ def apply_to_request_post_elements(request_post: QueryDict, post_elements_handle
         iterators_over_dicts_for_request_post_update: List[Iterator] = list()
         
         # dicts_to_update_post: Iterator[Dict[str,str]]
-        messages.error(request_l[0], f"request_post: {list(request_post.items())}")
+        messages.error(request_l[0], f"request_post after context managers entered: {list(request_post.items())}")
         for key, value in request_post.items():
             # Make passing function for handling the found key possible
             # TODO: remove this list()

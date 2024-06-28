@@ -40,7 +40,7 @@ class UmlFile(models.Model):
     """
     
     class SupportedFormat(models.TextChoices):
-        # TODO: Unknown = None, _("Unspecified")
+        UNKNOWN = "unknown", _("Unknown")
         EA_XMI = "ea_xmi", _("Enterprise Architect XMI")
         PAPYRUS_XMI = "papyrus_uml", _("Papyrus UML")
         STARUML_MDJ = "staruml_xmi", _("StarUML XMI")
