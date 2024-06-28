@@ -129,7 +129,7 @@ class AddUmlFileForm(forms.ModelForm):
         choices=UmlFile.SupportedFormat.choices,
         widget=forms.Select(attrs={"class": "form-control"}),
         required=False,
-        initial=None
+        initial=UmlFile.SupportedFormat.UNKNOWN
     )
 
     filename = forms.CharField(
