@@ -8,17 +8,15 @@
 </div>
 {% endif %}
 
-<div class="row">
-    {% for field in form %}
-        <div class="form-group col-8 col-md-6 mt-2 {% if field.errors %}has-error{% endif %}">
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}
-                {{ field.help_text | safe }}
-            {% endif %}
-            {% for error in field.errors %}
-                <div class="alert alert-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-    {% endfor %}
-</div>
+{% for field in form %}
+    <div class="form-group {% if field.errors %}has-error{% endif %}">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+            {{ field.help_text | safe }}
+        {% endif %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+    </div>
+{% endfor %}

@@ -40,15 +40,19 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    const formsetPrefix = "{{ formset.prefix }}";
+    const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
     $(document).ready(function() {
         const formsetContainer = $("#formset-container");
         const addButton = $("#add-file");
-        const totalForms = $("#id_umlfile_set-TOTAL_FORMS");
+        // source_files is the name of the relation in the UMLModel model 
+        const totalForms = $(`#${totalFormsInputId}`);
 
         addButton.on('click', function(e) {
             e.preventDefault();
             // Get the current number of forms
             let formNum = parseInt(totalForms.val());
+            console.log("Value " + formNum)
             // Clone the empty form template
             let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
             // Append the new form to the formset container

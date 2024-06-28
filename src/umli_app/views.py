@@ -1,4 +1,6 @@
-from typing import Dict
+from typing import Dict, IO
+from collections import deque
+
 
 import pika
 from django.shortcuts import render, redirect
@@ -11,7 +13,7 @@ from django.db import transaction
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from .models import UmlModel, UmlFile
 from .forms import SignUpForm, AddUmlModelForm, AddUmlFileForm, AddUmlFileFormset
-
+from umli_app.utils.forms_utils import get_form_index, create_handler_for_copying_forms, create_copies_of_forms_from_formset, apply_to_request_post_elements, FormCopiesConfig
 
 def home(request: HttpRequest) -> HttpResponse:
 
@@ -118,25 +120,77 @@ def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
             return redirect("home")
 
 
+def _decode_file(file: IO, encoding: str = 'utf-8') -> str:
+    try:
+        return file.read().decode(encoding)
+    except UnicodeDecodeError as ex:
+        # TODO: add message
+        return None
+
+
 def add_uml_model(request: HttpRequest) -> HttpResponse:
+    SOURCE_FILES_FORMSET_PREFIX = "source_files"
     if request.user.is_authenticated:
         if request.method == "POST":
-            form = AddUmlModelForm(request.POST)
-            formset = AddUmlFileFormset(request.POST, request.FILES)
-            if form.is_valid() and formset.is_valid():
+            mutable_post_data = request.POST.copy()
+            form = AddUmlModelForm(mutable_post_data, request.FILES)
+            messages.success(request, f"POST: {mutable_post_data}")
+            messages.success(request, f"Files: {request.FILES}")
+            messages.success(request, f"Files items: {list(request.FILES.items())}")
+            messages.success(request, f"Files keys: {list(request.FILES.keys())}")
+            messages.success(request, f"Files lists: {list(request.FILES.lists())}")
+            if form.is_valid():
                 with transaction.atomic():
                     added_uml_model = form.save()
+
+                    config_for_copies_of_forms_with_multiple_files = list()
+                    for files_field_name, files_list in request.FILES.lists():
+                        form_index = get_form_index(files_field_name, SOURCE_FILES_FORMSET_PREFIX)
+                        file_format = mutable_post_data.get(f"{SOURCE_FILES_FORMSET_PREFIX}-{form_index}-format")
+                        messages.success(request, f"Form index: {form_index}")
+                        messages.success(request, f"file_format: {file_format}")
+                        messages.success(request, f"files_list: {files_list}")
+
+                        filenames = deque()
+                        decode_files_callables = deque()
+
+                        for file_in_memory in files_list:
+                            filenames.append(file_in_memory.name)
+                            # decode_files_callables.append(lambda : _decode_file(file_in_memory))
+                            decode_files_callables.append(_decode_file(file_in_memory))
+                            messages.warning(request, f"file_in_mem: {file_in_memory.name}")
+                            messages.warning(request, f"file_in_mem encoding: {file_in_memory.encoding if hasattr(file_in_memory, 'encoding') else 'NO Encoding attr'}")
+                            messages.warning(request, f"file_in_mem read: {file_in_memory.read().decode('utf-8')}")
+                            messages.warning(request, f"file_in_mem second read: {file_in_memory.read().decode('utf-8')}")
+                            
+
+                        messages.success(request, f"filenames: {filenames}")
+                        messages.success(request, f"decode_files_callables: {decode_files_callables}")
+                        config_for_copies_of_forms_with_multiple_files.append(FormCopiesConfig(form_index, len(files_list), {'data': decode_files_callables, 'format': file_format, 'filename': filenames}))
+
+                    messages.success(request, f"config: {config_for_copies_of_forms_with_multiple_files}")
+                    handler_for_copying_forms = create_handler_for_copying_forms(SOURCE_FILES_FORMSET_PREFIX, config_for_copies_of_forms_with_multiple_files)                        
+                    
+                    messages.success(request, f"view- before apply - request_post: {mutable_post_data}")
+                    updated_post_data = apply_to_request_post_elements(mutable_post_data, [handler_for_copying_forms], request)
+                    messages.success(request, f"view- after apply - request_post: {mutable_post_data}")
+                    messages.success(request, f"view- after apply - return_request_post: {updated_post_data}")
+
+                    messages.success(request, f"Source files file: {files_field_name}\n Index: {form_index}")
+            formset = AddUmlFileFormset(mutable_post_data)
+            messages.warning(request, f"formset.is_valid() {formset.is_valid()}")
+            if formset.is_valid():
+                with transaction.atomic():
+                    added_uml_model = form.save()
+                    messages.success(request, f"Post data: {mutable_post_data}")
                     formset.instance = added_uml_model
                     formset.save()
-
-                    translate_uml_model(request, added_uml_model.id)
-
-                    messages.success(request, "UML model has been added.")
+                    messages.success(request, f"formset.instance: {formset.instance}")
                     return redirect("home")
 
         else:
             form = AddUmlModelForm()
-            formset = AddUmlFileFormset()
+            formset = AddUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX)
 
         return render(request, "add-uml-model.html", {"form": form, "formset": formset})
 
