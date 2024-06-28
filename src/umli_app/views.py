@@ -14,10 +14,11 @@ from umli_app.message_broker.producer import send_uploaded_file_message, create_
 from .models import UmlModel, UmlFile
 from .forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset
 from umli_app.utils.forms_utils import get_form_index, create_handler_for_copying_forms, apply_to_request_post_elements, FormCopiesConfig
+from umli_backend.settings import LOGGING
 
 
-logger = logging.getLogger(__name__)
-
+main_logger_name = next(iter(LOGGING['loggers'].keys()))
+logger = logging.getLogger(main_logger_name).getChild(__name__)
 
 
 def home(request: HttpRequest) -> HttpResponse:

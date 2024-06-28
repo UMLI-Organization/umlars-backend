@@ -17,6 +17,10 @@
                 {% for form in formset %}
                     <div class="formset-container__form-container mb-3">
                         {% render_file_upload_form form %}
+                        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+                        <div class="d-none">
+                            {{ form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -33,7 +37,11 @@
 <!-- Hidden template for a new form -->
 <div id="empty_form" style="display:none;">
     <div class="formset-container__form-container mb-3">
-            {% render_file_upload_form formset.empty_form %}
+        {% render_file_upload_form formset.empty_form %}
+        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+        <div class="d-none">
+            {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+        </div>
     </div>
 </div>
 
@@ -45,23 +53,27 @@
     $(document).ready(function() {
         const formsetContainer = $("#formset-container");
         const addButton = $("#add-file");
-        // source_files is the name of the relation in the UMLModel model 
         const totalForms = $(`#${totalFormsInputId}`);
 
         addButton.on('click', function(e) {
             e.preventDefault();
             // Get the current number of forms
             let formNum = parseInt(totalForms.val());
-            console.log("Value " + formNum)
-            // Clone the empty form template
+            console.log("Add new form with num: " + formNum)
+             // Clone the empty form template
             let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
             // Append the new form to the formset container
             formsetContainer.append(newForm);
             // Increment the total forms count
             totalForms.val(formNum + 1);
         });
+
+        // Event delegation to handle delete button clicks for dynamically added forms
+        formsetContainer.on('click', '.delete-form-btn', function() {
+            const formContainer = $(this).closest('.formset-container__form-container');
+            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+            formContainer.hide();
+        });
     });
 </script>
-
-
 {% endblock %}

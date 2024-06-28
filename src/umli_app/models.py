@@ -48,7 +48,7 @@ class UmlFile(models.Model):
 
 
     data = models.TextField()
-    filename = models.CharField(max_length=200, default=None)
+    filename = models.CharField(max_length=200, default=None, blank=True, null=True)
     
     format = models.CharField(
         max_length=50, choices=SupportedFormat.choices, default=None

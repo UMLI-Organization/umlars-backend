@@ -159,3 +159,23 @@ MEDIA_URL = "/uploads/"
 MESSAGE_TAGS = {
     messages_constants.ERROR: "error alert-danger",
 }
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "umlars.log",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+}

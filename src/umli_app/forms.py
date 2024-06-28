@@ -119,7 +119,7 @@ class AddUmlFileForm(forms.ModelForm):
     data = forms.CharField(
         label="Raw data",
         widget=forms.Textarea(
-            attrs={"class": "form-control", "placeholder": "Raw Data", 'rows':2, 'cols':1}
+            attrs={"class": "form-control", "placeholder": "Raw Data", 'rows':1, 'cols':1}
         ),
         required=False,
     )
