@@ -141,43 +141,17 @@ class AddUmlFileForm(forms.ModelForm):
 
         
     def clean(self) -> dict:
-        return super(AddUmlFileForm, self).clean()
-        old_cleaned = cleaned_data
-        filename = self.data.get('filename')
-        cleaned_data['filename']= filename
-
-        source_file = cleaned_data.get("file") or next(self.files.items())[1] if self.files else None
-        filename = cleaned_data['filename']
-        cleaned_data["file"] = source_file
-        # raise forms.ValidationError(
-        #     "You must provide either a source file or formatted data."
-        #     f"Cleaned: {cleaned_data}"
-        # )
+        cleaned_data =  super(AddUmlFileForm, self).clean()
         data = cleaned_data.get("data")
 
-        # Ensure at least one of the fields is filled
-        if not source_file and not data:
+        # Ensure that data is provided (either from manual input or file upload)
+        if not data:
             raise forms.ValidationError(
                 "You must provide either a source file or formatted data."
-                f"Self dir: {dir(self)}"
-                f"Self.files: {self.files}"
-                f"Old cleaned: {old_cleaned}"
-                f"Cleaned: {cleaned_data}"
             )
         
         return cleaned_data
     
-    # def save(self, commit=True) -> UmlFile:
-    #     instance = super(AddUmlFileForm, self).save(commit=False)
-    #     if self.cleaned_data.get('file'):
-    #         instance.filename = self.cleaned_data['file'].name
-    #         instance.data = self.cleaned_data['file'].read().decode('utf-8')
-    #     elif self.cleaned_data.get('data'):
-    #         instance.data = self.cleaned_data['data']
-    #     if commit:
-    #         instance.save()
-    #     return instance
-
 
 AddUmlFileFormset = forms.inlineformset_factory(
     UmlModel, UmlFile, form=AddUmlFileForm, 

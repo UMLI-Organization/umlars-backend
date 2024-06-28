@@ -4,11 +4,15 @@ from itertools import chain
 from functools import partial
 from contextlib import contextmanager, ExitStack
 from collections import defaultdict
+import logging
 
 from django.contrib import messages
 from django.http import QueryDict
 
-request_l = []
+
+logger = logging.getLogger(__name__)
+
+
 def get_form_index(form_field_name: str, formset_prefix: str|None = None) -> int | None:
     if formset_prefix is not None:
         regex = re.compile(r'^' + formset_prefix + r'-(\d+)-.+$')
@@ -33,7 +37,7 @@ class FormKeyParts(NamedTuple):
     @classmethod
     def try_from_key(cls: type["FormKeyParts"], key: str) -> type["FormKeyParts"]:
         key_parts = key.split('-')
-        messages.error(request_l[0], f"key_parts: {key_parts}")
+        logger.info(f"Method: try_from_key - key_parts: {key_parts}")
         try:
             key_formset_prefix = key_parts[0]
             key_form_index = int(key_parts[1])
@@ -84,7 +88,7 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
 
 
     def get_value_or_next_from_iterator(value: Any | Iterator[Any]) -> Any:
-        messages.success(request_l[0], f"value received: {value}")
+        logger.info(f"Method: get_value_or_next_from_iterator - value: {value}")
         if isinstance(value, Iterator):
             new_value = next(value)
         elif isinstance(value, (List, Deque)):
@@ -95,9 +99,8 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
         if callable(new_value):
             new_value = new_value()
 
-        messages.success(request_l[0], f"value received - after: {value}")
-
-        messages.success(request_l[0], f"new_value: {new_value}")
+        logger.info(f"Method: get_value_or_next_from_iterator - new_value: {new_value}")
+        logger.info(f"Method: get_value_or_next_from_iterator - received value afterwards: {value}")
 
         return new_value
 
@@ -106,7 +109,7 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
         new_key_value_pair = dict()
         new_key = f"{formset_prefix}-{new_form_index}-{field_name}"
 
-        messages.success(request_l[0], f"new_values_for_fields: {new_values_for_fields}, field: {field_name}")
+        logger.info(f"Method: create_copy_of_form_data - new_form_index: {new_form_index}, old_value: {old_value}, new_values_for_fields: {new_values_for_fields}, field_name: {field_name}")
         new_value = get_value_or_next_from_iterator(new_values_for_fields.get(field_name)) if new_values_for_fields else old_value
         new_key_value_pair[new_key] = new_value 
         return new_key_value_pair
@@ -114,7 +117,7 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
     
     def get_index_for_copy(copies_config: FormCopiesConfig, copy_number: int) -> int:
         new_form_index = context_data['new_form_indexes'][copies_config.index_of_form_to_copy].get(copy_number)
-        messages.error(request_l[0], f"get_index_for_copy -new_form_index that may be none: {new_form_index}")
+        logger.info(f"Method: get_index_for_copy - copies_config: {copies_config}, copy_number: {copy_number}")
         if new_form_index is None:
             new_form_index = context_data['current_total_forms_number']
             context_data['new_form_indexes'][copies_config.index_of_form_to_copy][copy_number] = new_form_index
@@ -126,9 +129,9 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
         request_post_update_dict: Dict[str, str] = {}
         form_key_parts = FormKeyParts.try_from_key(key)
 
-        messages.warning(request_l[0], f"form_key_parts: {form_key_parts}")
-        messages.warning(request_l[0], f"is_to_be_copied: {is_element_to_be_copied(form_key_parts)}")
+        logger.info(f"Method: try_create_copies_of_form_data - key: {key}, value: {value}, form_key_parts: {form_key_parts}")
         if is_element_to_be_copied(form_key_parts):
+            logger.info(f"Elemnt is to be copied based on form_key_parts: {form_key_parts}")
             copies_config = form_index_to_copies_config.get(form_key_parts.form_index)
 
             if last_copy_overwrites_original:
@@ -138,64 +141,52 @@ def create_copies_of_forms_from_formset(request_post: QueryDict, formset_prefix:
 
             for copy_number in copies_numbers:
                 new_form_index = get_index_for_copy(copies_config, copy_number)
-
-
                 copy_data_dict = create_copy_of_form_data(new_form_index, value, copies_config.new_values_for_fields, form_key_parts.field_name)
-                messages.success(request_l[0], f"copy nr: {copy_number} for form id: {new_form_index} - data dict: {copy_data_dict}")
+
+                logger.info(f"Method: try_create_copies_of_form_data - copy nr: {copy_number} for form id: {new_form_index} - data dict: {copy_data_dict}")               
                 request_post_update_dict.update(copy_data_dict)
 
 
             if last_copy_overwrites_original:
-                messages.success(request_l[0], f"last_copy_overwrites_original - request_post_update_dict: {request_post_update_dict}")
+                logger.info(f"Method: try_create_copies_of_form_data - last_copy_overwrites_original: {last_copy_overwrites_original}")
                 copy_data_dict = create_copy_of_form_data(copies_config.index_of_form_to_copy, value, copies_config.new_values_for_fields, form_key_parts.field_name)
-                messages.success(request_l[0], f"last_copy_overwrites_original: {copy_data_dict}")
+                
+                logger.info(f"Method: try_create_copies_of_form_data - last_copy_overwrites_original - retrieved data dict {copy_data_dict}")
                 request_post_update_dict.update(copy_data_dict)
  
-
+        else:
+            logger.info(f"Element is not to be copied based on form_key_parts: {form_key_parts}")
 
         return request_post_update_dict
-                    
-    # TODO: -suggested but why 
-    # if key_parts[-1] == 'id':
-    #     return
     
     try:
         yield try_create_copies_of_form_data
     finally:
-        ...
-        # TODO: here there should be checked if all copies were created, if not - change total forms numbers AND all indexes of copies to eliminate the holes
-        # request_post[total_forms_key] = context_data['original_total_forms_number'] + get_total_copies_created()
-
+        """
+        TODO: here there should be checked if all copies were created, if not - change total forms numbers AND all indexes of copies to eliminate the holes
+        Code before conflict of indexes (cause by not incrementing in different managers the same base TotalForms):
+        request_post[total_forms_key] = context_data['original_total_forms_number'] + get_total_copies_created()
+        """
+        
 
 def apply_to_request_post_elements(request_post: QueryDict, post_elements_handlers: Iterator[Callable], request) -> None:
     """
     Function will edit the provided QueryDict object in place by copying the form with index form_to_copy_index.
     """
-    request_l.append(request)
-
     with ExitStack() as stack:
         handlers_and_entered_context_managers = [stack.enter_context(handler) if hasattr((handler := partial_handler(request_post)), '__enter__') else handler for partial_handler in post_elements_handlers]
         iterators_over_dicts_for_request_post_update: List[Iterator] = list()
-        
-        # dicts_to_update_post: Iterator[Dict[str,str]]
-        messages.error(request_l[0], f"request_post after context managers entered: {list(request_post.items())}")
+
+        logger.info(F"Method: apply_to_request_post_elements - request_post after context managers entered: {request_post}")        
         for key, value in request_post.items():
-            # Make passing function for handling the found key possible
             # TODO: remove this list()
-            messages.error(request_l[0], f"k: {key}, v: {value}")
+            logger.info(F"Method: apply_to_request_post_elements - key: {key}, value: {value}")
             iterators_over_dicts_for_request_post_update.append(list(map(lambda handler: handler(key, value), handlers_and_entered_context_managers)))
 
-        messages.error(request_l[0], f"iterators_over_dicts_for_request_post_update: {iterators_over_dicts_for_request_post_update}")
+
+        logger.info(f"Method: apply_to_request_post_elements - iterators_over_dicts_for_request_post_update: {iterators_over_dicts_for_request_post_update}")
         for update_dict in chain.from_iterable(iterators_over_dicts_for_request_post_update):
-            messages.error(request_l[0], f"update_dict: {update_dict}")
+            logger.info(f"Method: apply_to_request_post_elements - update_dict: {update_dict}")
             request_post.update(update_dict)
 
     return request_post
-    
-    # """
-    # handling -id field"""
-    # id_key = f"{formset_prefix}-{form_to_copy_index}-id"
-    # id_value = request_post[id_key]
-    # request_post[id_key.replace(str(form_to_copy_index), str(form_to_copy_index + 1))] = id_value
-    # fields_to_pop = ['id', 'DELETE']
-
