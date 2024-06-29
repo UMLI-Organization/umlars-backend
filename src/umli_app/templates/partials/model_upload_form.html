@@ -11,7 +11,9 @@
         {% for file_form in formset %}
             <div class="formset-container__form-container mb-3 border rounded p-3">
                 {% render_file_upload_form file_form %}
-                <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+                <div class="d-flex justify-content-end w-100">
+                    <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+                </div>
                 <div class="d-none">
                     {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
                 </div>
@@ -31,7 +33,9 @@
 <div id="empty_form" class="d-none">
     <div class="formset-container__form-container mb-3 border rounded p-3">
         {% render_file_upload_form formset.empty_form %}
-        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+        <div class="d-flex justify-content-end w-100">
+            <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+        </div>
         <div class="d-none">
             {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->
         </div>
