@@ -159,18 +159,6 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
     return redirect("home")
 
 
-# TODO: do zmiany
-def update_uml_files(files: Dict[str, UploadedFile], associated_model: UmlModel, format: str) -> HttpResponse:
-    for file_name, file in files.items():
-        UmlFile.objects.create(
-            file=file.read(),
-            format=format,
-            filename = file_name,
-            model=associated_model
-        )
-
-    return HttpResponse("Files have been updated.")
-
 
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     SOURCE_FILES_FORMSET_PREFIX = "source_files"
@@ -195,16 +183,16 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                     else:
                         logger.error(f"UML files: {formset.errors} could not be added.")
                         messages.error(request, "UML files could not be added.")
-                        return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+                        return render(request, "update-uml-model.html", {"form": form, "formset": formset})
             else:
                 logger.error(f"UML model: {form.errors} could not be added.")
                 messages.error(request, "UML model could not be added.")
-                return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+                return render(request, "update-uml-model.html", {"form": form, "formset": formset})
             
         else:
             form = AddUmlModelForm(instance=uml_model_to_update)
             formset = EditUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
-            return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            return render(request, "update-uml-model.html", {"form": form, "formset": formset})
 
     else:
         messages.warning(request, "You need to be logged in to update this UML model")
@@ -215,6 +203,6 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("home")
     else:
-        messages.warning(request, "You need to be logged in to update this UML model")
+        messages.warning(request, "You need to be logged in to upload UML models")
         return redirect("home")
 

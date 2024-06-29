@@ -154,7 +154,7 @@ class AddUmlFileForm(forms.ModelForm):
         label="",
         widget=forms.TextInput(attrs={"class": "d-none"}),
         required=False,
-        initial=None
+        initial='internal_file'
     )
 
         

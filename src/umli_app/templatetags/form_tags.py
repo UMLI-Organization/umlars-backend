@@ -14,6 +14,14 @@ def render_form_with_errors(form):
 @register.inclusion_tag("partials/file_upload_form.html")
 def render_file_upload_form(form):
     """
-    Formats a form with errors using bootstrap.
+    Formats a form for file upload or edit.
     """
     return {"form": form}
+
+
+@register.inclusion_tag("partials/model_upload_form.html")
+def render_model_upload_form(form, formset):
+    """
+    Formats a form for model upload or edit.
+    """
+    return {"form": form, "formset": formset}
