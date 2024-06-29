@@ -4,16 +4,76 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="col-md-6 offset-md-3"> 
-        <h1 class="mb-4 mt-4">Add UML Model</h1>
-        <form method="POST" enctype="multipart/form-data">
+    <div class="col-md-8 offset-md-2"> 
+        <h1 class="mb-4 mt-4">Update UML Model</h1>
+        <form method="POST" enctype="multipart/form-data" class="needs-validation">
             {% csrf_token %}
         
             {% render_form_with_errors form %}
 
+            <h4 class="mt-4">Source files:</h4>
+            <div class="formset-container" id="formset-container">
+                {{ formset.management_form }}
+                {% for form in formset %}
+                    <div class="formset-container__form-container mb-3 border rounded p-3">
+                        {% render_file_upload_form form %}
+                        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+                        <div class="d-none">
+                            {{ form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div>
+                <button type="button" id="add-file" class="btn btn-success mt-4">+ Add Another File</button>
+            </div>
             <a href="{% url 'home' %}" class="btn btn-secondary mt-4">Back</a>
             <button type="submit" class="btn btn-primary mt-4">Update UML Model</button>
         </form>
     </div>
 </div>
+
+<!-- Hidden template for a new form -->
+<div id="empty_form" class="d-none">
+    <div class="formset-container__form-container mb-3 border rounded p-3">
+        {% render_file_upload_form formset.empty_form %}
+        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+        <div class="d-none">
+            {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const formsetPrefix = "{{ formset.prefix }}";
+    const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
+    $(document).ready(function() {
+        const formsetContainer = $("#formset-container");
+        const addButton = $("#add-file");
+        const totalForms = $(`#${totalFormsInputId}`);
+
+        addButton.on('click', function(e) {
+            e.preventDefault();
+            // Get the current number of forms
+            let formNum = parseInt(totalForms.val());
+            console.log("Add new form with num: " + formNum)
+             // Clone the empty form template
+            let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
+            // Append the new form to the formset container
+            formsetContainer.append(newForm);
+            // Increment the total forms count
+            totalForms.val(formNum + 1);
+        });
+
+        // Event delegation to handle delete button clicks for dynamically added forms
+        formsetContainer.on('click', '.delete-form-btn', function() {
+            const formContainer = $(this).closest('.formset-container__form-container');
+            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+            formContainer.hide();
+        });
+    });
+</script>
 {% endblock %}

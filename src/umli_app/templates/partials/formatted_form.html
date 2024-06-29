@@ -9,7 +9,7 @@
 {% endif %}
 
 {% for field in form %}
-    <div class="form-group {% if field.errors %}has-error{% endif %}">
+    <div class="form-group mb-3 {% if field.errors %}has-error{% endif %}">
         {{ field.label_tag }}
         {{ field }}
         {% if field.help_text %}

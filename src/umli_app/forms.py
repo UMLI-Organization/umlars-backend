@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import re
 import logging
 from typing import Dict, Any, NamedTuple, Callable, List, Iterator, Deque
@@ -17,7 +18,7 @@ from django.utils.datastructures import MultiValueDict
 from umli_app.models import UmlModel, UmlFile
 from umli_app.utils.files_utils import decode_file
 from umli_backend.settings import LOGGING
-
+from umli_app.exceptions import UnsupportedFileError
 
 main_logger_name = next(iter(LOGGING['loggers'].keys()))
 logger = logging.getLogger(main_logger_name).getChild(__name__)
@@ -160,6 +161,7 @@ class AddUmlFileForm(forms.ModelForm):
     def clean(self) -> dict:
         cleaned_data =  super(AddUmlFileForm, self).clean()
         data = cleaned_data.get("data")
+        logger.debug(f"Data from cleaned data for UmlFile: {data}")
 
         # Ensure that data is provided (either from manual input or file upload)
         if not data:
@@ -170,9 +172,15 @@ class AddUmlFileForm(forms.ModelForm):
         return cleaned_data
     
 
-AddUmlFileFormsetBase = forms.inlineformset_factory(
+_AddUmlFileFormsetBase = forms.inlineformset_factory(
     UmlModel, UmlFile, form=AddUmlFileForm, 
     extra=1, can_delete=True, fields=("data", "format", "file", 'filename')
+)
+
+
+_EditUmlFileFormsetBase = forms.inlineformset_factory(
+    UmlModel, UmlFile, form=AddUmlFileForm, 
+    extra=0, can_delete=True, fields=("data", "format", "file", 'filename')
 )
 
 
@@ -201,23 +209,22 @@ class FormKeyParts(NamedTuple):
             return cls()
 
         return cls(key_formset_prefix, key_form_index, key_field_name, key_last_element)
-    
 
-class AddUmlFileFormset(AddUmlFileFormsetBase):
-    FILE_FORMAT_FIELD_NAME = 'format'
 
-    
-    def __init__(self, data: Any | None = None, files: Any | None = None, instance: Any | None = None, save_as_new: bool = None, prefix: Any | None = None, queryset: Any | None = None, **kwargs: Any) -> None:
-        if data is not None and files is not None and prefix is not None:
-            data = self.split_forms_data_for_files(data, files, prefix)
-        
-        logger.info(f"Method: AddUmlFileFormset.__init__ - data: {data}, files: {files}, instance: {instance}, save_as_new: {save_as_new}, prefix: {prefix}, queryset: {queryset}, kwargs: {kwargs}")
-        super().__init__(data, files=None, instance=instance, save_as_new=save_as_new, prefix=prefix, queryset=queryset, **kwargs)
+class ProcessFormDataMixin(ABC):
+    @abstractmethod
+    def process_data(self, data: QueryDict, *args, **kwargs) -> QueryDict:
+        ...
 
+
+class SplitFormsDataForFilesMixin(ProcessFormDataMixin):
+    def process_data(self, data: QueryDict, files: MultiValueDict[str, UploadedFile], prefix: str) -> QueryDict:
+        return self.split_forms_data_for_files(data, files, prefix)
 
     def split_forms_data_for_files(self, data: QueryDict, files: MultiValueDict[str, UploadedFile], prefix: str) -> QueryDict:
         logger.debug(f"Method split_forms_data_for_files - from data: {data} for files: {files}")
         config_for_copies_of_forms_with_multiple_files = self.create_form_copies_config_for_files(data, files, prefix)
+        logger.debug(f"Method split_forms_data_for_files - config_for_copies_of_forms_with_multiple_files: {config_for_copies_of_forms_with_multiple_files}")
 
         if config_for_copies_of_forms_with_multiple_files:
             mutable_post_data = data.copy()
@@ -231,18 +238,34 @@ class AddUmlFileFormset(AddUmlFileFormsetBase):
         for files_field_name, files_list in files.lists():
             form_index = self.__class__.get_form_index(files_field_name, prefix)
             file_format = post_data.get(f"{prefix}-{form_index}-{self.__class__.FILE_FORMAT_FIELD_NAME}")
-            number_of_copies=len(files_list)
             
             filenames = deque()
-            decode_files_callables = deque()
+            decoded_files = deque()
 
             for file_in_memory in files_list:
-                filenames.append(file_in_memory.name)
                 # TODO: make callables - but remember that in such way access is possible only once
+                # Also it would require checking if file decoding didnt raise an exception later - during the value retrieval
+                # -> this would require a new approach to skipping those files, since callables(retrieval functions) would be added for all files
                 # decode_files_callables.append(lambda : decode_file(file_in_memory))
-                decode_files_callables.append(decode_file(file_in_memory))
+                try:
+                    decoded_file = decode_file(file_in_memory)
+                except UnsupportedFileError as ex:
+                    logger.warning(f"Method: create_form_copies_config_for_files - error during decoding file: {file_in_memory} - {ex}\n Current filenames list: {filenames}\nCurrent decoded files: {decoded_files}")
+                    # TODO: add information about failed decoding to some internal dict mapping file name to error message and then pass those information to the user as warnings
+                    continue
 
-            config_for_copies_of_forms_with_multiple_files.append(FormCopiesConfig(form_index, number_of_copies, {'data': decode_files_callables, 'format': file_format, 'filename': filenames}))
+                decoded_files.append(decoded_file)
+                filenames.append(file_in_memory.name)
+
+            number_of_decoded_files=len(decoded_files)
+            try:
+                assert number_of_decoded_files == len(filenames)
+            except AssertionError:
+                raise ValueError("Number of files is different than number of filenames.")
+            
+            if decoded_files:
+                new_values_for_fields={'data': decoded_files, 'format': file_format, 'filename': filenames}
+                config_for_copies_of_forms_with_multiple_files.append(FormCopiesConfig(form_index, number_of_copies=number_of_decoded_files, new_values_for_fields=new_values_for_fields))
 
         return config_for_copies_of_forms_with_multiple_files
 
@@ -405,3 +428,25 @@ class AddUmlFileFormset(AddUmlFileFormsetBase):
                 request_post.update(update_dict)
 
         return request_post
+
+
+class AddUmlFileFormset(_AddUmlFileFormsetBase, SplitFormsDataForFilesMixin):
+    FILE_FORMAT_FIELD_NAME = 'format'
+    
+    def __init__(self, data: Any | None = None, files: Any | None = None, instance: Any | None = None, save_as_new: bool = None, prefix: Any | None = None, queryset: Any | None = None, **kwargs: Any) -> None:
+        if data is not None and files is not None and prefix is not None:
+            data = self.process_data(data, files, prefix)
+        
+        logger.info(f"Method: AddUmlFileFormset.__init__ - data: {data}, files: {files}, instance: {instance}, save_as_new: {save_as_new}, prefix: {prefix}, queryset: {queryset}, kwargs: {kwargs}")
+        super().__init__(data, files=None, instance=instance, save_as_new=save_as_new, prefix=prefix, queryset=queryset, **kwargs)
+
+
+class EditUmlFileFormset(_EditUmlFileFormsetBase, SplitFormsDataForFilesMixin):
+    FILE_FORMAT_FIELD_NAME = 'format'
+    
+    def __init__(self, data: Any | None = None, files: Any | None = None, instance: Any | None = None, save_as_new: bool = None, prefix: Any | None = None, queryset: Any | None = None, **kwargs: Any) -> None:
+        if data is not None and files is not None and prefix is not None:
+            data = self.process_data(data, files, prefix)
+        
+        logger.info(f"Method: AddUmlFileFormset.__init__ - data: {data}, files: {files}, instance: {instance}, save_as_new: {save_as_new}, prefix: {prefix}, queryset: {queryset}, kwargs: {kwargs}")
+        super().__init__(data, files=None, instance=instance, save_as_new=save_as_new, prefix=prefix, queryset=queryset, **kwargs)

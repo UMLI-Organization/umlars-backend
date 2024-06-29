@@ -11,7 +11,7 @@ from django.db import transaction
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset
+from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset
 from umli_backend.settings import LOGGING
 
 
@@ -154,8 +154,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
         else:
             form = AddUmlModelForm()
             formset = AddUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX)
-
-        return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            return render(request, "add-uml-model.html", {"form": form, "formset": formset})
 
     return redirect("home")
 
@@ -173,20 +172,40 @@ def update_uml_files(files: Dict[str, UploadedFile], associated_model: UmlModel,
     return HttpResponse("Files have been updated.")
 
 
-# TODO: prefetch files and use formset
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    SOURCE_FILES_FORMSET_PREFIX = "source_files"
     if request.user.is_authenticated:
-        uml_model_to_update = UmlModel.objects.get(id=pk)
-        form = AddUmlModelForm(request.POST or None, request.FILES or None, instance=uml_model_to_update)
-        if form.is_valid():
-            updated_model = form.save()
-            update_uml_files(form.cleaned_data["source_files"], form.cleaned_data["format"], updated_model)
+        uml_model_to_update = UmlModel.objects.prefetch_related("source_files").get(id=pk)
+        if request.method == "POST":
+            
+            form = AddUmlModelForm(request.POST, instance=uml_model_to_update)
+            formset = EditUmlFileFormset(request.POST, request.FILES, prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
 
-            translate_uml_model(request, updated_model.id)
+            if form.is_valid():
+                with transaction.atomic():
+                    added_uml_model = form.save()
+                    formset.instance = added_uml_model
+                    if formset.is_valid():
+                        added_uml_files = formset.save()
+                        logger.info(f"UML files: {added_uml_files} have been added.")
+                        # TODO: add translate for each file
+                        messages.success(request, f"UML model: {added_uml_model} has been added.")
+                        logger.info(f"UML model: {added_uml_model} has been added.")
+                        return redirect("home")
+                    else:
+                        logger.error(f"UML files: {formset.errors} could not be added.")
+                        messages.error(request, "UML files could not be added.")
+                        return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            else:
+                logger.error(f"UML model: {form.errors} could not be added.")
+                messages.error(request, "UML model could not be added.")
+                return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            
+        else:
+            form = AddUmlModelForm(instance=uml_model_to_update)
+            formset = EditUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
+            return render(request, "add-uml-model.html", {"form": form, "formset": formset})
 
-            messages.success(request, "UML model has been updated.")
-            return redirect("home")
-        return render(request, "update-uml-model.html", {"form": form})
     else:
         messages.warning(request, "You need to be logged in to update this UML model")
         return redirect("home")

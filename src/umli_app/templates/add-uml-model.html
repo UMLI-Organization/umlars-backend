@@ -6,7 +6,7 @@
 <div class="container mt-4">
     <div class="col-md-8 offset-md-2"> 
         <h1 class="mb-4 mt-4">Add UML Model</h1>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" class="needs-validation">
             {% csrf_token %}
         
             {% render_form_with_errors form %}
@@ -15,7 +15,7 @@
             <div class="formset-container" id="formset-container">
                 {{ formset.management_form }}
                 {% for form in formset %}
-                    <div class="formset-container__form-container mb-3">
+                    <div class="formset-container__form-container mb-3 border rounded p-3">
                         {% render_file_upload_form form %}
                         <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
                         <div class="d-none">
@@ -35,8 +35,8 @@
 </div>
 
 <!-- Hidden template for a new form -->
-<div id="empty_form" style="display:none;">
-    <div class="formset-container__form-container mb-3">
+<div id="empty_form" class="d-none">
+    <div class="formset-container__form-container mb-3 border rounded p-3">
         {% render_file_upload_form formset.empty_form %}
         <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
         <div class="d-none">
@@ -45,8 +45,8 @@
     </div>
 </div>
 
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const formsetPrefix = "{{ formset.prefix }}";
     const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;

@@ -55,7 +55,7 @@ class UmlFile(models.Model):
     )
 
     model = models.ForeignKey(
-        UmlModel, on_delete=models.SET_NULL, related_name="source_files",
+        UmlModel, on_delete=models.CASCADE, related_name="source_files",
         blank=True, null=True
     )
     date_uploaded = models.DateTimeField(auto_now_add=True)
