@@ -122,6 +122,21 @@ class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
     
 
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = [single_file_clean(data, initial)]
+        return result
+
+
+# TODO: MultipleFileField should be used here instead of FileField - it would change significantly the way of handling files in the formset (SplitFormsDataForFilesMixin)
 class AddUmlFileForm(forms.ModelForm):
     file = forms.FileField(
         label="Source files",
@@ -452,3 +467,43 @@ class EditUmlFileFormset(_EditUmlFileFormsetBase, SplitFormsDataForFilesMixin):
         
         logger.info(f"Method: AddUmlFileFormset.__init__ - data: {data}, files: {files}, instance: {instance}, save_as_new: {save_as_new}, prefix: {prefix}, queryset: {queryset}, kwargs: {kwargs}")
         super().__init__(data, files=None, instance=instance, save_as_new=save_as_new, prefix=prefix, queryset=queryset, **kwargs)
+
+
+
+class GroupingRuleForm(forms.Form):
+    ...
+
+
+class ExtensionsGroupingRuleForm(GroupingRuleForm):
+    extensions = forms.CharField(
+        widget=forms.TextInput(attrs={'placeholder': 'e.g. .uml,.notation'}),
+        label="Extensions to join (comma-separated)",
+        initial=" uml, notation",
+        help_text="Files with the same names will be joined into one model, if they have formats from the same group."
+    )
+
+
+class RegexGroupingRuleForm(GroupingRuleForm):
+    regex_pattern = forms.CharField(
+        widget=forms.TextInput(attrs={'placeholder': 'Regex grouping pattern'}),
+        required=False,
+        label="Regex pattern",
+        help_text="Files will be joined into one model, if they have identical values for all groups from the given regex."
+    )
+
+
+class FilesGroupingForm(forms.Form):
+    dry_run = forms.BooleanField(
+        required=False,
+        label="Dry run (review groups before final upload)",
+        widget=forms.CheckboxInput(attrs={"class": "form-switch"}),
+        initial=True
+    )
+    files = MultipleFileField(
+        label="Upload files:",
+        widget=MultipleFileInput(attrs={"id": "id-file-input", "class": "form-control", "multiple": True}),
+    )
+
+
+ExtensionsGroupingFormSet = forms.formset_factory(ExtensionsGroupingRuleForm, extra=1)
+RegexGroupingFormSet = forms.formset_factory(RegexGroupingRuleForm, extra=0)

@@ -11,7 +11,7 @@ from django.db import transaction
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset
+from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, ExtensionsGroupingRuleForm, RegexGroupingRuleForm
 from umli_backend.settings import LOGGING
 
 
@@ -198,11 +198,66 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         messages.warning(request, "You need to be logged in to update this UML model")
         return redirect("home")
 
-
 def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
-        return redirect("home")
+
+        if request.method == "POST":
+            files_form = FilesGroupingForm(request.POST, request.FILES)
+            extension_group_formset = ExtensionsGroupingFormSet(request.POST, prefix='extensions')
+            regex_group_formset = RegexGroupingFormSet(request.POST, prefix='regex')
+
+
+            if files_form.is_valid() and extension_group_formset.is_valid() and regex_group_formset.is_valid():
+                ...
+                for file in files_form.files:
+                    ...
+
+            else:
+                # Re-render the form with errors
+                return render(request, 'bulk-upload-uml-models.html', {
+                    'form': files_form,
+                    'extension_group_formset': extension_group_formset,
+                    'regex_group_formset': regex_group_formset,
+                })
+        else:
+            files_form = FilesGroupingForm()
+            extension_group_formset = ExtensionsGroupingFormSet(prefix='extensions')
+            regex_group_formset = RegexGroupingFormSet(prefix='regex')
+
+        return render(request, 'bulk-upload-uml-models.html', {
+            'form': files_form,
+            'extension_group_formset': extension_group_formset,
+            'regex_group_formset': regex_group_formset,
+        })
+
     else:
-        messages.warning(request, "You need to be logged in to upload UML models")
+        messages.warning(request, "You need to be logged in to upload files.")
         return redirect("home")
 
+
+def process_files(files, join_extensions, regex_pattern):
+    # Logic to process files and split them according to the rules.
+    detected_models = []
+    # Implement the logic to group files based on the provided rules
+    # This is a placeholder implementation
+    for file in files:
+        model_name = determine_model_name(file, join_extensions, regex_pattern)
+        model = UmlModel(name=model_name, description="")
+        model.save()
+        UmlFile(model=model, filename=file.name, data=file.read().decode('utf-8'), format=determine_format(file.name)).save()
+        detected_models.append(model)
+    return detected_models
+
+def determine_model_name(file, join_extensions, regex_pattern):
+    # Logic to determine model name based on file and rules
+    return file.name.split('.')[0]
+
+def determine_format(filename):
+    # Logic to determine format based on filename extension
+    return filename.split('.')[-1]
+
+def save_detected_models(detected_models):
+    for model in detected_models:
+        model.save()
+        for file in model.files.all():
+            file.save()

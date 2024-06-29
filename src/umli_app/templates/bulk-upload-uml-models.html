@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4 mt-4">Bulk Upload UML Models</h1>
+        <form method="POST" enctype="multipart/form-data" class="needs-validation">
+            {% csrf_token %}
+            
+            {% render_form_with_errors form %}
+            
+            <h5 class="mt-4">Grouping Rules:</h5>
+            
+            <div class="grouping-rules__container">
+                <h6>Extensions Grouping</h6>
+                <div id="extensions-group__container">
+                    {{ extension_group_formset.management_form }}
+                    {% for extensions_form in extension_group_formset %}
+                        <div class="extensions-group__form-row form-row align-items-end mb-3 border rounded p-3">
+                            <div class="col w-100">
+                                {% render_form_with_errors extensions_form %}
+                                <button type="button" class="btn btn-danger extensions-group__remove-btn ml-2">Remove</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="extensions-group__add-btn" class="btn btn-secondary mt-2">+ Add Another Extension Group</button>
+                
+                <h6 class="mt-4">Regex Grouping</h6>
+                <div id="regex-group__container">
+                    {{ regex_group_formset.management_form }}
+                    {% for regex_form in regex_group_formset %}
+                        <div class="regex-group__form-row form-row align-items-end mb-3 border rounded p-3">
+                            <div class="col w-100">
+                                {% render_form_with_errors regex_form %}
+                                <button type="button" class="btn btn-danger regex-group__remove-btn ml-2">Remove</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="regex-group__add-btn" class="btn btn-secondary mt-2">+ Add Another Regex Group</button>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{% url 'home' %}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Upload Files</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden template for a new form -->
+<div id="id-extensions-group-empty-form" class="d-none">
+    <div class="extensions-group__form-row form-row align-items-end mb-3 border rounded p-3">
+        <div class="col w-100">
+            {% render_form_with_errors extension_group_formset.empty_form %}
+            <button type="button" class="btn btn-danger extensions-group__remove-btn ml-2">Remove</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden template for a new form -->
+<div id="id-regex-group-empty-form" class="d-none">
+    <div class="regex-group__form-row form-row align-items-end mb-3 border rounded p-3">
+        <div class="col w-100">
+            {% render_form_with_errors regex_group_formset.empty_form %}
+            <button type="button" class="btn btn-danger regex-group__remove-btn ml-2">Remove</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        function addDynamicFormHandlers(addButtonId, formsetContainerId, formsetPrefix, emptyFormDivId) {
+            const addButton = $(addButtonId);
+            const formsetContainer = $(formsetContainerId);
+            const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
+            const totalForms = $(`#${totalFormsInputId}`);
+            
+            addButton.on('click', function(e) {
+                e.preventDefault();
+                // Get the current number of forms
+                let formNum = parseInt(totalForms.val());
+                // Clone the empty form template
+                let newForm = $(emptyFormDivId).html().replace(/__prefix__/g, formNum);
+                // Append the new form to the formset container
+                formsetContainer.append(newForm);
+                // Increment the total forms count
+                totalForms.val(formNum + 1);
+            });
+            
+            // Event delegation to handle remove button clicks for dynamically added forms
+            formsetContainer.on('click', '.btn-danger', function() {
+                $(this).closest('.form-row').remove();
+            });
+        }
+        
+        addDynamicFormHandlers("#extensions-group__add-btn", "#extensions-group__container", "{{ extension_group_formset.prefix }}", "#id-extensions-group-empty-form");
+        addDynamicFormHandlers("#regex-group__add-btn", "#regex-group__container", "{{ regex_group_formset.prefix }}", "#id-regex-group-empty-form");
+    });
+</script>
+{% endblock %}
