@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="col-md-12">
+        <h1 class="mb-4 mt-4">Review Detected UML Models</h1>
+        <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <div class="alert alert-info" role="alert">
+                Review the detected UML models and their corresponding files below. You can make changes if necessary before submitting.
+            </div>
+
+            {% for model_form, file_formset in model_forms %}
+                <div class="model-group mb-4 border rounded p-3">
+                    <h5>Model: {{ model_form.instance.name }}</h5>
+                    {% render_form_with_errors model_form %}
+                    
+                    <h6>Associated Files:</h6>
+                    <div class="formset-container" id="formset-container-{{ forloop.counter }}">
+                        {{ file_formset.management_form }}
+                        {% for file_form in file_formset %}
+                            <div class="formset-container__form-container mb-3 border rounded p-3">
+                                {% render_file_upload_form file_form %}
+                                <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+                                <div class="d-none">
+                                    {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div>
+                        <button type="button" class="btn btn-success add-file-btn mt-2" data-formset-prefix="{{ file_formset.prefix }}">+ Add Another File</button>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <div class="mt-4">
+                <a href="{% url 'bulk-upload-uml-models' %}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Submit All Models</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden template for a new file form -->
+<div id="empty_form" class="d-none">
+    <div class="formset-container__form-container mb-3 border rounded p-3">
+        {% render_file_upload_form empty_file_form %}
+        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+        <div class="d-none">
+            {{ empty_file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Function to handle adding new file forms
+        function addFileForm(prefix) {
+            const totalFormsInputId = `id_${prefix}-TOTAL_FORMS`;
+            const formsetContainer = $(`#formset-container-${prefix}`);
+            const totalForms = $(`#${totalFormsInputId}`);
+            
+            let formNum = parseInt(totalForms.val());
+            let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
+            formsetContainer.append(newForm);
+            totalForms.val(formNum + 1);
+        }
+        
+        // Handle add file button click
+        $('.add-file-btn').on('click', function(e) {
+            e.preventDefault();
+            const prefix = $(this).data('formset-prefix');
+            addFileForm(prefix);
+        });
+
+        // Event delegation to handle delete button clicks for dynamically added forms
+        $(document).on('click', '.delete-form-btn', function() {
+            const formContainer = $(this).closest('.formset-container__form-container');
+            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+            formContainer.hide();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,5 +1,7 @@
 import logging
-from typing import Dict
+from typing import List, Set, NamedTuple, Dict
+import re
+from collections import defaultdict
 
 import pika
 from django.shortcuts import render, redirect
@@ -13,6 +15,8 @@ from umli_app.message_broker.producer import send_uploaded_file_message, create_
 from umli_app.models import UmlModel, UmlFile
 from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, ExtensionsGroupingRuleForm, RegexGroupingRuleForm
 from umli_backend.settings import LOGGING
+from umli_app.utils.files_utils import decode_file
+from umli_app.exceptions import UnsupportedFileError
 
 
 main_logger_name = next(iter(LOGGING['loggers'].keys()))
@@ -198,6 +202,7 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         messages.warning(request, "You need to be logged in to update this UML model")
         return redirect("home")
 
+
 def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
 
@@ -208,9 +213,42 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
 
             if files_form.is_valid() and extension_group_formset.is_valid() and regex_group_formset.is_valid():
-                ...
-                for file in files_form.files:
-                    ...
+                files = request.FILES.getlist('files')
+
+                # Process the extension grouping rules
+                extension_rules: List[Set[str]] = []
+                for form in extension_group_formset:
+                    extensions = form.cleaned_data.get('extensions')
+                    if extensions:
+                        extension_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
+
+                # Process the regex grouping rules
+                regex_rules: List[str] = []
+                for form in regex_group_formset:
+                    regex_pattern = form.cleaned_data.get('regex_pattern')
+                    if regex_pattern:
+                        regex_rules.append(regex_pattern)
+
+                detected_models = process_files(files, extension_rules, regex_rules)
+                
+                if files_form.cleaned_data['dry_run']:
+                    model_forms = list()
+                    file_formsets = list()
+
+                    for i, model in enumerate(detected_models):
+                        model_forms.append(AddUmlModelForm(instance=model))
+                        file_formsets.append(EditUmlFileFormset(instance=model, prefix=f'source_files_{i}'))
+
+
+                    return render(request, 'review-bulk-upload.html', {
+                        'model_forms': zip(model_forms, file_formsets),
+                        'empty_file_form': AddUmlFileFormset().empty_form,
+                    })
+
+                else:
+                    save_detected_models(detected_models)
+                    messages.success(request, "Files uploaded successfully.")
+                    return redirect('home')
 
             else:
                 # Re-render the form with errors
@@ -235,29 +273,175 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
 
-def process_files(files, join_extensions, regex_pattern):
-    # Logic to process files and split them according to the rules.
+def process_files(
+    files: List[UploadedFile], 
+    extension_groups: List[List[str]], 
+    regex_patterns: List[str]
+) -> List[UmlModel]:
+    """
+    Process files according to the provided grouping rules.
+
+    Args:
+        files (List[UploadedFile]): List of uploaded files.
+        extension_groups (List[List[str]]): List of extension groups for grouping files.
+        regex_patterns (List[str]): List of regex patterns for grouping files.
+
+    Returns:
+        List[UmlModel]: List of UmlModel instances created from the files.
+    """
     detected_models = []
-    # Implement the logic to group files based on the provided rules
-    # This is a placeholder implementation
-    for file in files:
-        model_name = determine_model_name(file, join_extensions, regex_pattern)
-        model = UmlModel(name=model_name, description="")
-        model.save()
-        UmlFile(model=model, filename=file.name, data=file.read().decode('utf-8'), format=determine_format(file.name)).save()
+    grouped_files = group_files(files, extension_groups, regex_patterns)
+    logger.info(f"Grouped files: {grouped_files}")
+
+    for group in grouped_files:
+        model_name = determine_model_name(group)
+        
+        model = UmlModel.objects.create(name=model_name, description=f"Created from bulk load of files.")
+        
+        for file in group.files:
+            try:
+                UmlFile.objects.create(
+                    model=model,
+                    filename=file.name,
+                    data=decode_file(file),
+                    format=UmlFile.SupportedFormat.UNKNOWN
+                )
+            except UnsupportedFileError as ex:
+                logger.error(f"Error processing file: {file.name}.\nError: {ex}")
+                continue
+
         detected_models.append(model)
+    
     return detected_models
 
-def determine_model_name(file, join_extensions, regex_pattern):
-    # Logic to determine model name based on file and rules
-    return file.name.split('.')[0]
 
-def determine_format(filename):
-    # Logic to determine format based on filename extension
-    return filename.split('.')[-1]
 
-def save_detected_models(detected_models):
+class ModelFilesGroup(NamedTuple):
+    model_name: str | None = None
+    files: List[UploadedFile] = []
+
+
+
+def create_filenames_to_extensions_mapping(files: List[UploadedFile]) -> Dict[str, Dict[str, List[UploadedFile]]]:
+    """
+    Create a mapping from filenames to extensions.
+
+    Args:
+        files (List[UploadedFile]): List of uploaded files.
+
+    Returns:
+        Dict[str, Dict[str, List[UploadedFile]]]: Mapping from filenames to extensions.
+    """
+    filenames_mapping = defaultdict(lambda: defaultdict(list))
+    for file in files:
+        base_name, extension = file.name.rsplit('.', 1)
+        filenames_mapping[base_name][extension].append(file)
+
+    return filenames_mapping
+
+
+def group_files(
+    files: List[UploadedFile], 
+    extension_groups: List[List[str]], 
+    regex_patterns: List[str]
+) -> List[ModelFilesGroup]:
+    """
+    Group files according to extension groups and regex patterns.
+
+    Args:
+        files (List[UploadedFile]): List of uploaded files.
+        extension_groups (List[List[str]]): List of extension groups for grouping files.
+        regex_patterns (List[str]): List of regex patterns for grouping files.
+
+    Returns:
+        List[ModelFilesGroup]: List of grouped files.
+    """
+    grouped_files: List[ModelFilesGroup] = []
+
+    if not extension_groups and not regex_patterns:
+        # If no grouping rules provided, treat each file as a separate group
+        for file in files:
+            grouped_files.append(ModelFilesGroup(model_name=determine_model_name_from_file(file), files=[file]))
+        return grouped_files
+    
+    filenames_to_extensions_mapping = create_filenames_to_extensions_mapping(files)
+
+    # Group by extension
+    for extensions in extension_groups:
+        for base_name, extensions_group in list(filenames_to_extensions_mapping.items()):
+            group = ModelFilesGroup()
+            for extension in extensions:
+                files = extensions_group.pop(extension, [])
+                group.files.extend(files)
+
+            if group.files:
+                grouped_files.append(group)
+                if not extensions_group:  # If no extensions left for this base name, remove the entry
+                    del filenames_to_extensions_mapping[base_name]
+
+    # Group by regex patterns
+    for pattern in regex_patterns:
+        regex = re.compile(pattern)
+        regex_groups = defaultdict(list)
+        for base_name, extensions_group in list(filenames_to_extensions_mapping.items()):
+            for extension, files in list(extensions_group.items()):
+                for file in files:
+                    match = regex.match(file.name)
+                    if match:
+                        regex_key = match.group(0)
+                        regex_groups[regex_key].append(file)
+                # Remove processed extensions
+                del extensions_group[extension]
+            if not extensions_group:  # If no extensions left for this base name, remove the entry
+                del filenames_to_extensions_mapping[base_name]
+
+        for regex_key, files in regex_groups.items():
+            grouped_files.append(ModelFilesGroup(model_name=regex_key, files=files))
+
+    # Any remaining files are treated as separate groups containing one file each
+    for base_name, extensions_group in filenames_to_extensions_mapping.items():
+        for extension, files in extensions_group.items():
+            for file in files:
+                grouped_files.append(ModelFilesGroup(model_name=determine_model_name_from_file(file), files=[file]))
+
+    return grouped_files
+
+
+
+def determine_model_name(group: ModelFilesGroup) -> str:
+    """
+    Determine the name for the UML model based on the grouped files.
+
+    Args:
+        group (ModelFilesGroup): Group of files.
+
+    Returns:
+        str: The determined model name.
+    """
+    return determine_model_name_from_file(group.files[0]) if group.model_name is None else group.model_name or "Unnamed Model"
+
+
+def determine_model_name_from_file(file: UploadedFile) -> str:
+    """
+    Determine the name for the UML model based on the grouped files.
+
+    Args:
+        group (ModelFilesGroup): Group of files.
+
+    Returns:
+        str: The determined model name.
+    """
+    return file.name.rsplit('.', 1)[0] or "Unnamed Model"
+
+
+def save_detected_models(detected_models: List[UmlModel]) -> None:
+    """
+    Save the detected UML models to the database.
+
+    Args:
+        detected_models (List[UmlModel]): List of UmlModel instances.
+    """
     for model in detected_models:
         model.save()
-        for file in model.files.all():
+        for file in model.files:
             file.save()
