@@ -69,3 +69,24 @@
         });
     });
 </script>
+<script>
+    $(document).ready(function() {
+        const fileInput = $('#id-file-input');
+        const filenameInput = $('#id-filename-input');
+
+        fileInput.on('change', function() {
+            if (fileInput.val()) {
+                filenameInput.val('');
+                filenameInput.prop('readonly', true);
+            } else {
+                filenameInput.prop('readonly', false);
+            }
+        });
+
+        // Disable the choice input if there's already a file uploaded
+        if (fileInput.val()) {
+            filenameInput.val('');
+            filenameInput.prop('readonly', true);
+        }
+    });
+</script>

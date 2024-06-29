@@ -125,7 +125,7 @@ class MultipleFileInput(forms.ClearableFileInput):
 class AddUmlFileForm(forms.ModelForm):
     file = forms.FileField(
         label="Source files",
-        widget=MultipleFileInput(attrs={"class": "form-control-file", "multiple": True}),
+        widget=MultipleFileInput(attrs={"id":"id-file-input", "class": "form-control", "type": "file", "multiple": True}),
         required=False,
     )
 
@@ -151,8 +151,10 @@ class AddUmlFileForm(forms.ModelForm):
     )
 
     filename = forms.CharField(
-        label="",
-        widget=forms.TextInput(attrs={"class": "d-none"}),
+        label="Filename",
+        widget=forms.TextInput(
+            attrs={"id":"id-filename-input", "class": "form-control", "placeholder": "Filename"}
+        ),
         required=False,
         initial='internal_file'
     )
