@@ -1,6 +1,5 @@
-from typing import Dict, IO
-from collections import deque
 import logging
+from typing import Dict
 
 import pika
 from django.shortcuts import render, redirect
@@ -11,9 +10,8 @@ from django.contrib import messages
 from django.db import transaction
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
-from .models import UmlModel, UmlFile
-from .forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset
-from umli_app.utils.forms_utils import get_form_index, create_handler_for_copying_forms, apply_to_request_post_elements, FormCopiesConfig
+from umli_app.models import UmlModel, UmlFile
+from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset
 from umli_backend.settings import LOGGING
 
 
@@ -126,57 +124,33 @@ def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
             return redirect("home")
 
 
-def _decode_file(file: IO, encoding: str = 'utf-8') -> str:
-    try:
-        return file.read().decode(encoding)
-    except UnicodeDecodeError as ex:
-        # TODO: add message
-        return None
-
-
 def add_uml_model(request: HttpRequest) -> HttpResponse:
     SOURCE_FILES_FORMSET_PREFIX = "source_files"
     if request.user.is_authenticated:
         if request.method == "POST":
-            mutable_post_data = request.POST.copy()
-            form = AddUmlModelForm(mutable_post_data, request.FILES)
+            form = AddUmlModelForm(request.POST)
+            formset = AddUmlFileFormset(request.POST, request.FILES, prefix=SOURCE_FILES_FORMSET_PREFIX)
+
             if form.is_valid():
                 with transaction.atomic():
                     added_uml_model = form.save()
-
-                    config_for_copies_of_forms_with_multiple_files = list()
-                    for files_field_name, files_list in request.FILES.lists():
-                        form_index = get_form_index(files_field_name, SOURCE_FILES_FORMSET_PREFIX)
-                        file_format = mutable_post_data.get(f"{SOURCE_FILES_FORMSET_PREFIX}-{form_index}-format")
-
-                        filenames = deque()
-                        decode_files_callables = deque()
-
-                        for file_in_memory in files_list:
-                            filenames.append(file_in_memory.name)
-                            # TODO:
-                            # decode_files_callables.append(lambda : _decode_file(file_in_memory))
-                            decode_files_callables.append(_decode_file(file_in_memory))
-                            
-
-                        config_for_copies_of_forms_with_multiple_files.append(FormCopiesConfig(form_index, len(files_list), {'data': decode_files_callables, 'format': file_format, 'filename': filenames}))
-
-                    if config_for_copies_of_forms_with_multiple_files:
-                        handler_for_copying_forms = create_handler_for_copying_forms(SOURCE_FILES_FORMSET_PREFIX, config_for_copies_of_forms_with_multiple_files)                        
-                        apply_to_request_post_elements(mutable_post_data, [handler_for_copying_forms], request)
-
-            formset = AddUmlFileFormset(mutable_post_data)
-            if formset.is_valid():
-                with transaction.atomic():
-                    added_uml_model = form.save()
                     formset.instance = added_uml_model
-                    added_uml_files = formset.save()
-
-                messages.success(request, f"UML model: {added_uml_model} has been added.")
-                logger.info(f"UML model: {added_uml_model} has been added.")
-                logger.info(f"UML files: {added_uml_files} have been added.")
-                return redirect("home")
-
+                    if formset.is_valid():
+                        added_uml_files = formset.save()
+                        logger.info(f"UML files: {added_uml_files} have been added.")
+                        # TODO: add translate for each file
+                        messages.success(request, f"UML model: {added_uml_model} has been added.")
+                        logger.info(f"UML model: {added_uml_model} has been added.")
+                        return redirect("home")
+                    else:
+                        logger.error(f"UML files: {formset.errors} could not be added.")
+                        messages.error(request, "UML files could not be added.")
+                        return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            else:
+                logger.error(f"UML model: {form.errors} could not be added.")
+                messages.error(request, "UML model could not be added.")
+                return render(request, "add-uml-model.html", {"form": form, "formset": formset})
+            
         else:
             form = AddUmlModelForm()
             formset = AddUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX)
