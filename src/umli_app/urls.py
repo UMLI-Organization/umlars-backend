@@ -14,6 +14,7 @@ urlpatterns = [
     path("update-uml-model/<int:pk>", views.update_uml_model, name="update-uml-model"),
     path("add-uml-model/", views.add_uml_model, name="add-uml-model"),
     path("bulk-upload-uml-models/", views.bulk_upload_uml_models, name="bulk-upload-uml-models"),
+    path("review-bulk-upload-uml-models/", views.review_bulk_upload_uml_models, name="review-bulk-upload-uml-models"),
 
     path('api/', include((router.urls, 'core_api'), namespace='core_api')),
 

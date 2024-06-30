@@ -140,7 +140,7 @@ class MultipleFileField(forms.FileField):
 class AddUmlFileForm(forms.ModelForm):
     file = forms.FileField(
         label="Source files",
-        widget=MultipleFileInput(attrs={"id":"id-file-input", "class": "form-control", "type": "file", "multiple": True}),
+        widget=MultipleFileInput(attrs={"id":"id-file-input", "class": "form-control file-input", "type": "file", "multiple": True}),
         required=False,
     )
 
@@ -168,7 +168,7 @@ class AddUmlFileForm(forms.ModelForm):
     filename = forms.CharField(
         label="Filename",
         widget=forms.TextInput(
-            attrs={"id":"id-filename-input", "class": "form-control", "placeholder": "Filename"}
+            attrs={"id":"id-filename-input", "class": "form-control filename-input", "placeholder": "Filename"}
         ),
         required=False,
         initial='internal_file'
@@ -265,6 +265,8 @@ class SplitFormsDataForFilesMixin(ProcessFormDataMixin):
                 # -> this would require a new approach to skipping those files, since callables(retrieval functions) would be added for all files
                 # decode_files_callables.append(lambda : decode_file(file_in_memory))
                 try:
+                    logger.debug(f"Creating formset data - decoding file: {file_in_memory.name}")
+
                     decoded_file = decode_file(file_in_memory)
                 except UnsupportedFileError as ex:
                     logger.warning(f"Method: create_form_copies_config_for_files - error during decoding file: {file_in_memory} - {ex}\n Current filenames list: {filenames}\nCurrent decoded files: {decoded_files}")
@@ -479,7 +481,8 @@ class ExtensionsGroupingRuleForm(GroupingRuleForm):
         widget=forms.TextInput(attrs={'placeholder': 'e.g. .uml,.notation'}),
         label="Extensions to join (comma-separated)",
         initial=" uml, notation",
-        help_text="Files with the same names will be joined into one model, if they have formats from the same group."
+        help_text="Files with the same names will be joined into one model, if they have formats from the same group.",
+        required=False
     )
 
 

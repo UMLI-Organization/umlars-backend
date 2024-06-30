@@ -25,5 +25,9 @@
                 {% endfor %}
             </div>
         {% endif %}
+        <!-- TODO: make sure this is required to properly have the TOTAL-FORMS and similar hidden inputs rendered -->
+        {% if field.is_hidden %}
+            {{ field }}
+        {% endif %}
     {% endfor %}
 </div>

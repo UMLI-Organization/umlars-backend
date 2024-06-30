@@ -1,7 +1,8 @@
 import logging
-from typing import List, Set, NamedTuple, Dict
+from typing import List, Set, Dict
 import re
 from collections import defaultdict
+import dataclasses
 
 import pika
 from django.shortcuts import render, redirect
@@ -211,7 +212,6 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
             extension_group_formset = ExtensionsGroupingFormSet(request.POST, prefix='extensions')
             regex_group_formset = RegexGroupingFormSet(request.POST, prefix='regex')
 
-
             if files_form.is_valid() and extension_group_formset.is_valid() and regex_group_formset.is_valid():
                 files = request.FILES.getlist('files')
 
@@ -246,6 +246,7 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                     })
 
                 else:
+                    logger.debug(f"Detected models: {detected_models}")
                     save_detected_models(detected_models)
                     messages.success(request, "Files uploaded successfully.")
                     return redirect('home')
@@ -273,9 +274,26 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
 
+def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
+    if request.user.is_authenticated:
+        if request.method == "POST":
+            logger.info(f"Post data: {request.POST}")
+            # logger.info(f"Files form valid: {files_form.is_valid()}")
+            # logger.info(f"Extension group formset valid: {extension_group_formset.is_valid()}")
+            # logger.info(f"Regex group formset valid: {regex_group_formset.is_valid()}")
+            # logger.info(f"Files: {request.FILES}")
+
+            pass
+        else:
+            pass
+    else:
+        messages.warning(request, "You need to be logged in to review the bulk upload.")
+        return redirect("home")
+
+
 def process_files(
     files: List[UploadedFile], 
-    extension_groups: List[List[str]], 
+    extensions_groups: List[List[str]], 
     regex_patterns: List[str]
 ) -> List[UmlModel]:
     """
@@ -283,14 +301,14 @@ def process_files(
 
     Args:
         files (List[UploadedFile]): List of uploaded files.
-        extension_groups (List[List[str]]): List of extension groups for grouping files.
+        extensions_groups (List[List[str]]): List of extension groups for grouping files.
         regex_patterns (List[str]): List of regex patterns for grouping files.
 
     Returns:
         List[UmlModel]: List of UmlModel instances created from the files.
     """
     detected_models = []
-    grouped_files = group_files(files, extension_groups, regex_patterns)
+    grouped_files = group_files(files, extensions_groups, regex_patterns)
     logger.info(f"Grouped files: {grouped_files}")
 
     for group in grouped_files:
@@ -300,10 +318,12 @@ def process_files(
         
         for file in group.files:
             try:
+                logger.debug(f"Processing file for grouping: {file.name}")
+                decoded_content = decode_file(file)
                 UmlFile.objects.create(
                     model=model,
                     filename=file.name,
-                    data=decode_file(file),
+                    data=decoded_content,
                     format=UmlFile.SupportedFormat.UNKNOWN
                 )
             except UnsupportedFileError as ex:
@@ -316,9 +336,10 @@ def process_files(
 
 
 
-class ModelFilesGroup(NamedTuple):
-    model_name: str | None = None
-    files: List[UploadedFile] = []
+@dataclasses.dataclass
+class ModelFilesGroup:
+    model_name: str | None = dataclasses.field(default=None)
+    files: List[UploadedFile] = dataclasses.field(default_factory=list)
 
 
 
@@ -342,7 +363,7 @@ def create_filenames_to_extensions_mapping(files: List[UploadedFile]) -> Dict[st
 
 def group_files(
     files: List[UploadedFile], 
-    extension_groups: List[List[str]], 
+    extensions_groups: List[List[str]], 
     regex_patterns: List[str]
 ) -> List[ModelFilesGroup]:
     """
@@ -350,7 +371,7 @@ def group_files(
 
     Args:
         files (List[UploadedFile]): List of uploaded files.
-        extension_groups (List[List[str]]): List of extension groups for grouping files.
+        extensions_groups (List[List[str]]): List of extension groups for grouping files.
         regex_patterns (List[str]): List of regex patterns for grouping files.
 
     Returns:
@@ -358,50 +379,56 @@ def group_files(
     """
     grouped_files: List[ModelFilesGroup] = []
 
-    if not extension_groups and not regex_patterns:
+    if not extensions_groups and not regex_patterns:
         # If no grouping rules provided, treat each file as a separate group
-        for file in files:
-            grouped_files.append(ModelFilesGroup(model_name=determine_model_name_from_file(file), files=[file]))
+        grouped_files = list(map(lambda file: ModelFilesGroup(files=[file]), files))
         return grouped_files
     
     filenames_to_extensions_mapping = create_filenames_to_extensions_mapping(files)
 
+    logger.debug(f"Files to extensions mapping: {filenames_to_extensions_mapping}")
     # Group by extension
-    for extensions in extension_groups:
-        for base_name, extensions_group in list(filenames_to_extensions_mapping.items()):
+    for extensions_group in extensions_groups:
+        for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
             group = ModelFilesGroup()
-            for extension in extensions:
-                files = extensions_group.pop(extension, [])
-                group.files.extend(files)
+            for extension in extensions_group:
+                files_for_extension = extensions_mapping_for_base_name.pop(extension, [])
+                group.files.extend(files_for_extension)
 
+
+            logger.debug(f"Grouped files for base name: {group.files}")
             if group.files:
                 grouped_files.append(group)
-                if not extensions_group:  # If no extensions left for this base name, remove the entry
+                if not extensions_mapping_for_base_name:  # If no extensions left for this base name, remove the entry
                     del filenames_to_extensions_mapping[base_name]
+    logger.debug(f"Grouped files after extension grouping: {grouped_files}")
 
     # Group by regex patterns
     for pattern in regex_patterns:
         regex = re.compile(pattern)
         regex_groups = defaultdict(list)
-        for base_name, extensions_group in list(filenames_to_extensions_mapping.items()):
-            for extension, files in list(extensions_group.items()):
-                for file in files:
+        for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
+            for extension, files_for_extension in list(extensions_mapping_for_base_name.items()):
+                for file in files_for_extension:
                     match = regex.match(file.name)
                     if match:
                         regex_key = match.group(0)
                         regex_groups[regex_key].append(file)
                 # Remove processed extensions
-                del extensions_group[extension]
-            if not extensions_group:  # If no extensions left for this base name, remove the entry
+                del extensions_mapping_for_base_name[extension]
+            if not extensions_mapping_for_base_name:  # If no extensions left for this base name, remove the entry
                 del filenames_to_extensions_mapping[base_name]
 
-        for regex_key, files in regex_groups.items():
-            grouped_files.append(ModelFilesGroup(model_name=regex_key, files=files))
+        for regex_key, files_for_extension in regex_groups.items():
+            grouped_files.append(ModelFilesGroup(model_name=regex_key, files=files_for_extension))
 
+    logger.debug(f"Grouped files after regex grouping: {grouped_files}")
+
+    logger.debug(f"Remaining files after grouping: {filenames_to_extensions_mapping}")
     # Any remaining files are treated as separate groups containing one file each
-    for base_name, extensions_group in filenames_to_extensions_mapping.items():
-        for extension, files in extensions_group.items():
-            for file in files:
+    for base_name, extensions_mapping_for_base_name in filenames_to_extensions_mapping.items():
+        for extension, files_for_extension in extensions_mapping_for_base_name.items():
+            for file in files_for_extension:
                 grouped_files.append(ModelFilesGroup(model_name=determine_model_name_from_file(file), files=[file]))
 
     return grouped_files
@@ -443,5 +470,5 @@ def save_detected_models(detected_models: List[UmlModel]) -> None:
     """
     for model in detected_models:
         model.save()
-        for file in model.files:
+        for file in model.source_files.all():
             file.save()

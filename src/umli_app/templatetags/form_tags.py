@@ -25,3 +25,11 @@ def render_model_upload_form(form, formset):
     Formats a form for model upload or edit.
     """
     return {"form": form, "formset": formset}
+
+
+@register.inclusion_tag("partials/model_upload_form_fields.html")
+def render_model_upload_form_fields(form, formset):
+    """
+    Formats a form for model upload or edit.
+    """
+    return {"form": form, "formset": formset}

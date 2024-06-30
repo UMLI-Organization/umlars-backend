@@ -3,94 +3,14 @@
 <form method="POST" enctype="multipart/form-data" class="needs-validation">
     {% csrf_token %}
 
-    {% render_form_with_errors form %}
+    {% render_model_upload_form_fields form formset %}
 
-    <h4 class="mt-4">Source files:</h4>
-    <div class="formset-container" id="formset-container">
-        {{ formset.management_form }}
-        {% for file_form in formset %}
-            <div class="formset-container__form-container mb-3 border rounded p-3">
-                {% render_file_upload_form file_form %}
-                <div class="d-flex justify-content-end w-100">
-                    <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
-                </div>
-                <div class="d-none">
-                    {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
-                </div>
-            </div>
-        {% endfor %}
+    <div class="w-100 d-flex justify-content-end">
+        {% if form.instance.id %}
+            <a href="{% url 'delete-uml-model' form.instance.id %}" class="btn btn-danger me-2">Delete UML Model</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Update UML Model</button>
     </div>
     
-    <div>
-        <button type="button" id="add-file" class="btn btn-success mt-4">+ Add Another File</button>
-    </div>
-    <a href="{% url 'home' %}" class="btn btn-secondary mt-4">Back</a>
-    <button type="submit" class="btn btn-primary mt-4">Update UML Model</button>
+    
 </form>
-
-
-<!-- Hidden template for a new form -->
-<div id="empty_form" class="d-none">
-    <div class="formset-container__form-container mb-3 border rounded p-3">
-        {% render_file_upload_form formset.empty_form %}
-        <div class="d-flex justify-content-end w-100">
-            <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
-        </div>
-        <div class="d-none">
-            {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->
-        </div>
-    </div>
-</div>
-
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    const formsetPrefix = "{{ formset.prefix }}";
-    const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
-    $(document).ready(function() {
-        const formsetContainer = $("#formset-container");
-        const addButton = $("#add-file");
-        const totalForms = $(`#${totalFormsInputId}`);
-
-        addButton.on('click', function(e) {
-            e.preventDefault();
-            // Get the current number of forms
-            let formNum = parseInt(totalForms.val());
-            console.log("Add new form with num: " + formNum)
-             // Clone the empty form template
-            let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
-            // Append the new form to the formset container
-            formsetContainer.append(newForm);
-            // Increment the total forms count
-            totalForms.val(formNum + 1);
-        });
-
-        // Event delegation to handle delete button clicks for dynamically added forms
-        formsetContainer.on('click', '.delete-form-btn', function() {
-            const formContainer = $(this).closest('.formset-container__form-container');
-            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
-            formContainer.hide();
-        });
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        const fileInput = $('#id-file-input');
-        const filenameInput = $('#id-filename-input');
-
-        fileInput.on('change', function() {
-            if (fileInput.val()) {
-                filenameInput.val('');
-                filenameInput.prop('readonly', true);
-            } else {
-                filenameInput.prop('readonly', false);
-            }
-        });
-
-        // Disable the choice input if there's already a file uploaded
-        if (fileInput.val()) {
-            filenameInput.val('');
-            filenameInput.prop('readonly', true);
-        }
-    });
-</script>
