@@ -8,7 +8,7 @@
         <form method="POST" enctype="multipart/form-data" class="needs-validation">
             {% csrf_token %}
             
-            {% render_form_with_errors form %}
+            {% render_formatted_form_inline form %}
             
             <h5 class="mt-4">Grouping Rules:</h5>
             
@@ -19,7 +19,7 @@
                     {% for extensions_form in extension_group_formset %}
                         <div class="extensions-group__form-row form-row align-items-end mb-3 border rounded p-3">
                             <div class="col w-100">
-                                {% render_form_with_errors extensions_form %}
+                                {% render_formatted_form_inline extensions_form %}
                                 <button type="button" class="btn btn-danger extensions-group__remove-btn ml-2">Remove</button>
                             </div>
                         </div>
@@ -33,7 +33,7 @@
                     {% for regex_form in regex_group_formset %}
                         <div class="regex-group__form-row form-row align-items-end mb-3 border rounded p-3">
                             <div class="col w-100">
-                                {% render_form_with_errors regex_form %}
+                                {% render_formatted_form_inline regex_form %}
                                 <button type="button" class="btn btn-danger regex-group__remove-btn ml-2">Remove</button>
                             </div>
                         </div>
@@ -54,7 +54,7 @@
 <div id="id-extensions-group-empty-form" class="d-none">
     <div class="extensions-group__form-row form-row align-items-end mb-3 border rounded p-3">
         <div class="col w-100">
-            {% render_form_with_errors extension_group_formset.empty_form %}
+            {% render_formatted_form_inline extension_group_formset.empty_form %}
             <button type="button" class="btn btn-danger extensions-group__remove-btn ml-2">Remove</button>
         </div>
     </div>
@@ -64,7 +64,7 @@
 <div id="id-regex-group-empty-form" class="d-none">
     <div class="regex-group__form-row form-row align-items-end mb-3 border rounded p-3">
         <div class="col w-100">
-            {% render_form_with_errors regex_group_formset.empty_form %}
+            {% render_formatted_form_inline regex_group_formset.empty_form %}
             <button type="button" class="btn btn-danger regex-group__remove-btn ml-2">Remove</button>
         </div>
     </div>

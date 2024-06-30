@@ -2,12 +2,12 @@
 
 {% render_form_with_errors form %}
     
-<h6>Associated Files:</h6>
-<div class="formset-container" id="formset-container-{{ formset.prefix }}">
+<div class="formset-container mt-4" id="formset-container-{{ formset.prefix }}">
+    <h6>Associated Files:</h6>
     {{ formset.management_form }}
     {% for file_form in formset %}
         <div class="formset-container__form-container mb-3 border rounded p-3">
-            {% render_file_upload_form file_form %}
+            {% render_form_with_errors file_form %}
             <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
             <div class="d-none">
                 {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
@@ -25,7 +25,7 @@
 <!-- Hidden template for a new form -->
 <div id="empty-form-{{ formset.prefix }}" class="d-none">
     <div class="formset-container__form-container mb-3 border rounded p-3">
-        {% render_file_upload_form formset.empty_form %}
+        {% render_form_with_errors formset.empty_form %}
         <button type="button" class="btn btn-danger delete-form-btn mt-4">Delete</button>
         <div class="d-none">
             {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->

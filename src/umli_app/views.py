@@ -11,10 +11,11 @@ from django.core.files.uploadedfile import UploadedFile
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db import transaction
+from django.forms.models import model_to_dict
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, ExtensionsGroupingRuleForm, RegexGroupingRuleForm
+from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, add_form_to_formset
 from umli_backend.settings import LOGGING
 from umli_app.utils.files_utils import decode_file
 from umli_app.exceptions import UnsupportedFileError
@@ -232,16 +233,18 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 detected_models = process_files(files, extension_rules, regex_rules)
                 
                 if files_form.cleaned_data['dry_run']:
-                    model_forms = list()
+                    ADD_UML_MODELS_FORMSET_PREFIX = 'uml_models'
                     file_formsets = list()
+                    model_formset = AddUmlModelFormset(prefix=ADD_UML_MODELS_FORMSET_PREFIX)
 
                     for i, model in enumerate(detected_models):
-                        model_forms.append(AddUmlModelForm(instance=model))
                         file_formsets.append(EditUmlFileFormset(instance=model, prefix=f'source_files_{i}'))
+                        add_form_to_formset(model_formset, model)
 
-
+                    
                     return render(request, 'review-bulk-upload.html', {
-                        'model_forms': zip(model_forms, file_formsets),
+                        'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
+                        'model_formset': model_formset,
                         'empty_file_form': AddUmlFileFormset().empty_form,
                     })
 

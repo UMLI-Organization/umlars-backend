@@ -6,8 +6,10 @@
     <div class="col-md-12">
         <h1 class="mb-4 mt-4">Review Detected UML Models</h1>
         
-        <form method="POST" enctype="multipart/form-data" class="needs-validation">
+        <form method="POST" enctype="multipart/form-data" class="needs-validation" action="{% url 'review-bulk-upload-uml-models' %}">
             {% csrf_token %}
+            
+            {{ model_formset.management_form }}
             
             <div class="alert alert-info" role="alert">
                 Review the detected UML models and their corresponding files below. You can make changes if necessary before submitting.
@@ -19,67 +21,39 @@
                 <button type="submit" class="btn btn-primary mb-4">Submit All Models</button>
             </div>
 
-            {% for model_form, file_formset in model_forms %}
+            {% for model_form, file_formset in model_forms_with_file_formsets %}
                 <div class="model-form-container border rounded p-3 mb-4 bg-light">
                     <h5>Model: {{ model_form.instance.name }}</h5>
-                    {% render_model_upload_form_fields model_form file_formset %}
+                    {% render_model_upload_form_fields model_form file_formset%}
 
-                    <div class="w-100 d-flex justify-content-end">
+                    <div class="w-100 d-flex justify-content-end model-form-container__delete-section">
+                        <div class="d-none">
+                            {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                        </div>
                         <button type="button" class="btn btn-danger model-form-container__delete-model-button me-2">Delete UML Model</button>
                     </div>
                 </div>
+            </div>
             {% endfor %}
             
         </form>
     </div>
 </div>
 
-<!-- Hidden template for a new file form -->
-<div id="empty_form" class="d-none">
-    <div class="formset-container__form-container mb-3 border rounded p-3">
-        {% render_file_upload_form empty_file_form %}
-        <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
-        <div class="d-none">
-            {{ empty_file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
-        </div>
-    </div>
-</div>
+
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        // Function to handle adding new file forms
-        function addFileForm(prefix) {
-            const totalFormsInputId = `id_${prefix}-TOTAL_FORMS`;
-            const formsetContainer = $(`#formset-container-${prefix}`);
-            const totalForms = $(`#${totalFormsInputId}`);
-            
-            let formNum = parseInt(totalForms.val());
-            let newForm = $("#empty_form").html().replace(/__prefix__/g, formNum);
-            formsetContainer.append(newForm);
-            totalForms.val(formNum + 1);
-        }
-        
-        // Handle add file button click
-        $('.add-file-btn').on('click', function(e) {
+        // Event delegation to handle delete model button clicks for model forms
+        $(document).on('click', '.model-form-container__delete-model-button', function(e) {
             e.preventDefault();
-            const prefix = $(this).data('formset-prefix');
-            addFileForm(prefix);
-        });
-
-        // Event delegation to handle delete button clicks for dynamically added forms
-        $(document).on('click', '.delete-form-btn', function() {
-            const formContainer = $(this).closest('.formset-container__form-container');
+            const formContainer = $(this).closest('.model-form-container__delete-section');
             formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
             formContainer.hide();
         });
 
-        // Event delegation to handle delete model button clicks for model forms
-        $(document).on('click', '.model-form-container__delete-model-button', function(e) {
-            e.preventDefault();
-            const modelFormContainer = $(this).closest('.model-form-container');
-            modelFormContainer.remove();
-        });
+
     });
 </script>
 {% endblock %}

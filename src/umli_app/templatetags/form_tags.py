@@ -11,8 +11,8 @@ def render_form_with_errors(form):
     return {"form": form}
 
 
-@register.inclusion_tag("partials/file_upload_form.html")
-def render_file_upload_form(form):
+@register.inclusion_tag("partials/formatted_form_inline.html")
+def render_formatted_form_inline(form):
     """
     Formats a form for file upload or edit.
     """

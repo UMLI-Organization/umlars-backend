@@ -510,3 +510,26 @@ class FilesGroupingForm(forms.Form):
 
 ExtensionsGroupingFormSet = forms.formset_factory(ExtensionsGroupingRuleForm, extra=1)
 RegexGroupingFormSet = forms.formset_factory(RegexGroupingRuleForm, extra=0)
+
+
+AddUmlModelFormset = forms.modelformset_factory(UmlModel, form=AddUmlModelForm, extra=0, can_delete=True)
+
+
+def add_form_to_formset(formset: forms.BaseFormSet, form_data: Dict[str, Any]) -> None:
+    # Get the management form data
+    management_form_data = formset.management_form.initial
+    total_forms = int(management_form_data['TOTAL_FORMS'])
+
+    # Increment the total forms count
+    management_form_data['TOTAL_FORMS'] = total_forms + 1
+
+    # Create a new form instance with initial data if needed
+    new_form = formset.form(form_data, prefix=f'{formset.prefix}-{total_forms}')
+
+    # Append the new form to the formset's forms
+    formset.forms.append(new_form)
+
+    # Update the formset's management form data
+    formset.management_form.initial = management_form_data
+    formset._total_form_count = total_forms + 1
+
