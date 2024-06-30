@@ -24,8 +24,8 @@
             {% for model_form, file_formset in model_forms_with_file_formsets %}
                 <div class="model-form-container border rounded p-3 mb-4 bg-light">
                     <h5>Model: {{ model_form.instance.name }}</h5>
-                    {% render_model_upload_form_fields model_form file_formset%}
-
+                    {% render_model_upload_form_fields model_form file_formset %}
+                    
                     <div class="w-100 d-flex justify-content-end model-form-container__delete-section">
                         <div class="d-none">
                             {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
@@ -33,7 +33,6 @@
                         <button type="button" class="btn btn-danger model-form-container__delete-model-button me-2">Delete UML Model</button>
                     </div>
                 </div>
-            </div>
             {% endfor %}
             
         </form>
@@ -43,12 +42,13 @@
 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- TODO: doesnt work -->
 <script>
     $(document).ready(function() {
         // Event delegation to handle delete model button clicks for model forms
         $(document).on('click', '.model-form-container__delete-model-button', function(e) {
             e.preventDefault();
-            const formContainer = $(this).closest('.model-form-container__delete-section');
+            const formContainer = $(this).closest('.model-form-container');
             formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
             formContainer.hide();
         });

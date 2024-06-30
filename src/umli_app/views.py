@@ -1,24 +1,22 @@
 import logging
-from typing import List, Set, Dict
-import re
-from collections import defaultdict
-import dataclasses
+from typing import List, Set
 
 import pika
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
-from django.core.files.uploadedfile import UploadedFile
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.forms import BaseFormSet
 from django.db import transaction
 from django.forms.models import model_to_dict
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from umli_app.models import UmlModel, UmlFile
 from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, add_form_to_formset
-from umli_backend.settings import LOGGING
 from umli_app.utils.files_utils import decode_file
-from umli_app.exceptions import UnsupportedFileError
+from umli_backend.settings import LOGGING
+from umli_app.utils.grouping_utils import group_files, determine_model_name
+import umli_app.settings
 
 
 main_logger_name = next(iter(LOGGING['loggers'].keys()))
@@ -217,11 +215,11 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 files = request.FILES.getlist('files')
 
                 # Process the extension grouping rules
-                extension_rules: List[Set[str]] = []
+                extensions_rules: List[Set[str]] = []
                 for form in extension_group_formset:
                     extensions = form.cleaned_data.get('extensions')
                     if extensions:
-                        extension_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
+                        extensions_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
 
                 # Process the regex grouping rules
                 regex_rules: List[str] = []
@@ -230,29 +228,44 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                     if regex_pattern:
                         regex_rules.append(regex_pattern)
 
-                detected_models = process_files(files, extension_rules, regex_rules)
+                grouped_files = group_files(files, extensions_rules, regex_rules)
+                logger.debug(f"Grouped files: {grouped_files}")
+
+                file_formsets = list()
+                model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+
+                for i, group in enumerate(grouped_files):
+                    model_name = determine_model_name(group)
+                    model = UmlModel(name=model_name, description=umli_app.settings.BULK_UPLOAD_MODEL_DESCRIPTION)
+                    add_form_to_formset(model_formset, model_to_dict(model))
+
+                    file_formset = EditUmlFileFormset(instance=model, prefix=f'source_files_{i}')
+                    for file in group.files:
+                        decoded_content = decode_file(file)
+                        uml_file = UmlFile(
+                            model=model,
+                            filename=file.name,
+                            data=decoded_content,
+                            format=UmlFile.SupportedFormat.UNKNOWN
+                        )
+
+                        add_form_to_formset(file_formset, model_to_dict(uml_file))
+                        
+
+
+                        
+                    file_formsets.append(file_formset)
+
+
                 
                 if files_form.cleaned_data['dry_run']:
-                    ADD_UML_MODELS_FORMSET_PREFIX = 'uml_models'
-                    file_formsets = list()
-                    model_formset = AddUmlModelFormset(prefix=ADD_UML_MODELS_FORMSET_PREFIX)
-
-                    for i, model in enumerate(detected_models):
-                        file_formsets.append(EditUmlFileFormset(instance=model, prefix=f'source_files_{i}'))
-                        add_form_to_formset(model_formset, model)
-
-                    
                     return render(request, 'review-bulk-upload.html', {
                         'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
                         'model_formset': model_formset,
                         'empty_file_form': AddUmlFileFormset().empty_form,
                     })
 
-                else:
-                    logger.debug(f"Detected models: {detected_models}")
-                    save_detected_models(detected_models)
-                    messages.success(request, "Files uploaded successfully.")
-                    return redirect('home')
+                return try_save_models(request, model_formset, file_formsets)
 
             else:
                 # Re-render the form with errors
@@ -277,201 +290,67 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
 
+
+def try_save_models(request: HttpRequest, model_formset: BaseFormSet, file_formsets: List[EditUmlFileFormset]) -> None:
+    if model_formset.is_valid() and all(file_formset.is_valid() for file_formset in file_formsets):
+        save_detected_models(model_formset, file_formsets)
+        messages.success(request, "Files uploaded successfully.")
+        return redirect('home')
+    else:
+        messages.error(request, "Files could not be uploaded.")
+        return render(request, 'review-bulk-upload.html', {
+            'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
+            'model_formset': model_formset,
+            'empty_file_form': AddUmlFileFormset().empty_form,
+        })
+
+
+
+
 def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
-            logger.info(f"Post data: {request.POST}")
-            # logger.info(f"Files form valid: {files_form.is_valid()}")
-            # logger.info(f"Extension group formset valid: {extension_group_formset.is_valid()}")
-            # logger.info(f"Regex group formset valid: {regex_group_formset.is_valid()}")
-            # logger.info(f"Files: {request.FILES}")
+            model_formset = AddUmlModelFormset(request.POST, prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            if model_formset.is_valid():
+                with transaction.atomic():
+                    # This is based on supposition that the order of models in the formset is the same as the order of file groups
+                    for i, model_form in enumerate(model_formset):
+                        model = model_form.save()
+                        file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=model)
+                        if file_formset.is_valid():
+                            file_formset.save()
+                        else:
+                            messages.warning(request, f"Files from for model {model.name} could not be uploaded.")
+                    
+                messages.success(request, "Files uploaded successfully.")
+                return redirect('home')
 
-            pass
         else:
-            pass
+            logger.warning(request, "Only POST supported.")
+            messages.warning(request, "Only POST requests supported.")
+            model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            return render(request, 'review-bulk-upload.html', {
+                'model_formset': model_formset,
+                'empty_file_form': AddUmlFileFormset().empty_form,
+            })
     else:
         messages.warning(request, "You need to be logged in to review the bulk upload.")
         return redirect("home")
 
 
-def process_files(
-    files: List[UploadedFile], 
-    extensions_groups: List[List[str]], 
-    regex_patterns: List[str]
-) -> List[UmlModel]:
+def save_detected_models(model_formset: BaseFormSet, file_formsets: List[EditUmlFileFormset]) -> None:
     """
-    Process files according to the provided grouping rules.
+    Save the detected models and their files to the database.
 
     Args:
-        files (List[UploadedFile]): List of uploaded files.
-        extensions_groups (List[List[str]]): List of extension groups for grouping files.
-        regex_patterns (List[str]): List of regex patterns for grouping files.
-
-    Returns:
-        List[UmlModel]: List of UmlModel instances created from the files.
+        model_formset (AddUmlModelFormset): Formset containing the models to save.
+        file_formsets (List[EditUmlFileFormset]): List of formsets containing the files to save.
     """
-    detected_models = []
-    grouped_files = group_files(files, extensions_groups, regex_patterns)
-    logger.info(f"Grouped files: {grouped_files}")
+    with transaction.atomic():
+        saved_model = model_formset.save()
 
-    for group in grouped_files:
-        model_name = determine_model_name(group)
-        
-        model = UmlModel.objects.create(name=model_name, description=f"Created from bulk load of files.")
-        
-        for file in group.files:
-            try:
-                logger.debug(f"Processing file for grouping: {file.name}")
-                decoded_content = decode_file(file)
-                UmlFile.objects.create(
-                    model=model,
-                    filename=file.name,
-                    data=decoded_content,
-                    format=UmlFile.SupportedFormat.UNKNOWN
-                )
-            except UnsupportedFileError as ex:
-                logger.error(f"Error processing file: {file.name}.\nError: {ex}")
-                continue
+        for file_formset in file_formsets:
+            file_formset.instance = saved_model
 
-        detected_models.append(model)
-    
-    return detected_models
-
-
-
-@dataclasses.dataclass
-class ModelFilesGroup:
-    model_name: str | None = dataclasses.field(default=None)
-    files: List[UploadedFile] = dataclasses.field(default_factory=list)
-
-
-
-def create_filenames_to_extensions_mapping(files: List[UploadedFile]) -> Dict[str, Dict[str, List[UploadedFile]]]:
-    """
-    Create a mapping from filenames to extensions.
-
-    Args:
-        files (List[UploadedFile]): List of uploaded files.
-
-    Returns:
-        Dict[str, Dict[str, List[UploadedFile]]]: Mapping from filenames to extensions.
-    """
-    filenames_mapping = defaultdict(lambda: defaultdict(list))
-    for file in files:
-        base_name, extension = file.name.rsplit('.', 1)
-        filenames_mapping[base_name][extension].append(file)
-
-    return filenames_mapping
-
-
-def group_files(
-    files: List[UploadedFile], 
-    extensions_groups: List[List[str]], 
-    regex_patterns: List[str]
-) -> List[ModelFilesGroup]:
-    """
-    Group files according to extension groups and regex patterns.
-
-    Args:
-        files (List[UploadedFile]): List of uploaded files.
-        extensions_groups (List[List[str]]): List of extension groups for grouping files.
-        regex_patterns (List[str]): List of regex patterns for grouping files.
-
-    Returns:
-        List[ModelFilesGroup]: List of grouped files.
-    """
-    grouped_files: List[ModelFilesGroup] = []
-
-    if not extensions_groups and not regex_patterns:
-        # If no grouping rules provided, treat each file as a separate group
-        grouped_files = list(map(lambda file: ModelFilesGroup(files=[file]), files))
-        return grouped_files
-    
-    filenames_to_extensions_mapping = create_filenames_to_extensions_mapping(files)
-
-    logger.debug(f"Files to extensions mapping: {filenames_to_extensions_mapping}")
-    # Group by extension
-    for extensions_group in extensions_groups:
-        for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
-            group = ModelFilesGroup()
-            for extension in extensions_group:
-                files_for_extension = extensions_mapping_for_base_name.pop(extension, [])
-                group.files.extend(files_for_extension)
-
-
-            logger.debug(f"Grouped files for base name: {group.files}")
-            if group.files:
-                grouped_files.append(group)
-                if not extensions_mapping_for_base_name:  # If no extensions left for this base name, remove the entry
-                    del filenames_to_extensions_mapping[base_name]
-    logger.debug(f"Grouped files after extension grouping: {grouped_files}")
-
-    # Group by regex patterns
-    for pattern in regex_patterns:
-        regex = re.compile(pattern)
-        regex_groups = defaultdict(list)
-        for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
-            for extension, files_for_extension in list(extensions_mapping_for_base_name.items()):
-                for file in files_for_extension:
-                    match = regex.match(file.name)
-                    if match:
-                        regex_key = match.group(0)
-                        regex_groups[regex_key].append(file)
-                # Remove processed extensions
-                del extensions_mapping_for_base_name[extension]
-            if not extensions_mapping_for_base_name:  # If no extensions left for this base name, remove the entry
-                del filenames_to_extensions_mapping[base_name]
-
-        for regex_key, files_for_extension in regex_groups.items():
-            grouped_files.append(ModelFilesGroup(model_name=regex_key, files=files_for_extension))
-
-    logger.debug(f"Grouped files after regex grouping: {grouped_files}")
-
-    logger.debug(f"Remaining files after grouping: {filenames_to_extensions_mapping}")
-    # Any remaining files are treated as separate groups containing one file each
-    for base_name, extensions_mapping_for_base_name in filenames_to_extensions_mapping.items():
-        for extension, files_for_extension in extensions_mapping_for_base_name.items():
-            for file in files_for_extension:
-                grouped_files.append(ModelFilesGroup(model_name=determine_model_name_from_file(file), files=[file]))
-
-    return grouped_files
-
-
-
-def determine_model_name(group: ModelFilesGroup) -> str:
-    """
-    Determine the name for the UML model based on the grouped files.
-
-    Args:
-        group (ModelFilesGroup): Group of files.
-
-    Returns:
-        str: The determined model name.
-    """
-    return determine_model_name_from_file(group.files[0]) if group.model_name is None else group.model_name or "Unnamed Model"
-
-
-def determine_model_name_from_file(file: UploadedFile) -> str:
-    """
-    Determine the name for the UML model based on the grouped files.
-
-    Args:
-        group (ModelFilesGroup): Group of files.
-
-    Returns:
-        str: The determined model name.
-    """
-    return file.name.rsplit('.', 1)[0] or "Unnamed Model"
-
-
-def save_detected_models(detected_models: List[UmlModel]) -> None:
-    """
-    Save the detected UML models to the database.
-
-    Args:
-        detected_models (List[UmlModel]): List of UmlModel instances.
-    """
-    for model in detected_models:
-        model.save()
-        for file in model.source_files.all():
-            file.save()
+            file_formset.save()
+            
