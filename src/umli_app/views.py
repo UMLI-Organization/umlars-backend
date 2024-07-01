@@ -1,5 +1,6 @@
 import logging
-from typing import List, Set
+from typing import Deque, Set
+from collections import deque
 
 import pika
 from django.shortcuts import render, redirect
@@ -99,7 +100,11 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 
 def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model_to_delete = UmlModel.objects.get(id=pk)
+        try:
+            uml_model_to_delete = UmlModel.objects.get(id=pk)
+        except UmlModel.DoesNotExist:
+            messages.warning(request, "UML model already does not exist")
+            return redirect("home")
         uml_model_to_delete.delete()
         messages.success(request, "UML model has been deleted.")
         return redirect("home")
@@ -215,14 +220,14 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 files = request.FILES.getlist('files')
 
                 # Process the extension grouping rules
-                extensions_rules: List[Set[str]] = []
+                extensions_rules: Deque[Set[str]] = deque()
                 for form in extension_group_formset:
                     extensions = form.cleaned_data.get('extensions')
                     if extensions:
                         extensions_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
 
                 # Process the regex grouping rules
-                regex_rules: List[str] = []
+                regex_rules: Deque[str] = deque()
                 for form in regex_group_formset:
                     regex_pattern = form.cleaned_data.get('regex_pattern')
                     if regex_pattern:
@@ -231,15 +236,18 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 grouped_files = group_files(files, extensions_rules, regex_rules)
                 logger.debug(f"Grouped files: {grouped_files}")
 
-                file_formsets = list()
-                model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
 
-                for i, group in enumerate(grouped_files):
+                uml_files_for_models = deque()
+                uml_models = deque()
+
+                
+                while grouped_files:
+                    group = grouped_files.pop()
                     model_name = determine_model_name(group)
                     model = UmlModel(name=model_name, description=umli_app.settings.BULK_UPLOAD_MODEL_DESCRIPTION)
-                    add_form_to_formset(model_formset, model_to_dict(model))
+                    uml_models.append(model)
 
-                    file_formset = EditUmlFileFormset(instance=model, prefix=f'source_files_{i}')
+                    model_files = deque()
                     for file in group.files:
                         decoded_content = decode_file(file)
                         uml_file = UmlFile(
@@ -249,23 +257,17 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                             format=UmlFile.SupportedFormat.UNKNOWN
                         )
 
-                        add_form_to_formset(file_formset, model_to_dict(uml_file))
-                        
+                        model_files.append(uml_file)
 
-
-                        
-                    file_formsets.append(file_formset)
+                    uml_files_for_models.append(model_files)
 
 
                 
                 if files_form.cleaned_data['dry_run']:
-                    return render(request, 'review-bulk-upload.html', {
-                        'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
-                        'model_formset': model_formset,
-                        'empty_file_form': AddUmlFileFormset().empty_form,
-                    })
+                    return try_render_forms_for_models(request, uml_models, uml_files_for_models)
 
-                return try_save_models(request, model_formset, file_formsets)
+
+                return try_save_uml_models(request, uml_models, uml_files_for_models)
 
             else:
                 # Re-render the form with errors
@@ -290,20 +292,41 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
 
+def try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]):
+    file_formsets = list()
+    model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
 
-def try_save_models(request: HttpRequest, model_formset: BaseFormSet, file_formsets: List[EditUmlFileFormset]) -> None:
-    if model_formset.is_valid() and all(file_formset.is_valid() for file_formset in file_formsets):
-        save_detected_models(model_formset, file_formsets)
-        messages.success(request, "Files uploaded successfully.")
-        return redirect('home')
-    else:
-        messages.error(request, "Files could not be uploaded.")
-        return render(request, 'review-bulk-upload.html', {
-            'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
-            'model_formset': model_formset,
-            'empty_file_form': AddUmlFileFormset().empty_form,
-        })
+    model_forms_ids_gen = range(len(uml_models))
 
+    for i in model_forms_ids_gen:
+        model = uml_models.pop()
+        model_files = uml_files_for_models.pop()
+        add_form_to_formset(model_formset, model_to_dict(model))
+        file_formset = EditUmlFileFormset(instance=model, prefix=f'source_files_{i}')
+
+        for model_file in model_files:
+            add_form_to_formset(file_formset, model_to_dict(model_file))
+
+        file_formsets.append(file_formset)
+
+    return render(request, 'review-bulk-upload.html', {
+        'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
+        'model_formset': model_formset,
+        'empty_file_form': EditUmlFileFormset().empty_form,
+    })
+
+
+
+def try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]) -> HttpResponse:
+    with transaction.atomic():
+        for model, model_files in zip(uml_models, uml_files_for_models):
+            model.save()
+            for model_file in model_files:
+                model_file.model = model
+                model_file.save() 
+
+    messages.success(request, "Files uploaded successfully.")
+    return redirect('home')
 
 
 
@@ -336,21 +359,3 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     else:
         messages.warning(request, "You need to be logged in to review the bulk upload.")
         return redirect("home")
-
-
-def save_detected_models(model_formset: BaseFormSet, file_formsets: List[EditUmlFileFormset]) -> None:
-    """
-    Save the detected models and their files to the database.
-
-    Args:
-        model_formset (AddUmlModelFormset): Formset containing the models to save.
-        file_formsets (List[EditUmlFileFormset]): List of formsets containing the files to save.
-    """
-    with transaction.atomic():
-        saved_model = model_formset.save()
-
-        for file_formset in file_formsets:
-            file_formset.instance = saved_model
-
-            file_formset.save()
-            

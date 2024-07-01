@@ -2,7 +2,8 @@ import dataclasses
 import logging
 import re
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Deque, Set
+from collections import deque
 
 from django.core.files.uploadedfile import UploadedFile
 
@@ -42,32 +43,33 @@ def create_filenames_to_extensions_mapping(files: List[UploadedFile]) -> Dict[st
 
 def group_files(
     files: List[UploadedFile], 
-    extensions_groups: List[List[str]], 
-    regex_patterns: List[str]
-) -> List[ModelFilesGroup]:
+    extensions_groups: Deque[Set[str]], 
+    regex_patterns: Deque[str]
+) -> Deque[ModelFilesGroup]:
     """
-    Group files according to extension groups and regex patterns.
+    Group files based on the provided grouping rules.
 
     Args:
         files (List[UploadedFile]): List of uploaded files.
-        extensions_groups (List[List[str]]): List of extension groups for grouping files.
-        regex_patterns (List[str]): List of regex patterns for grouping files.
+        extensions_groups (Deque[Set[str]]): Groups of extensions.
+        regex_patterns (Deque[str]): List of regex patterns.
 
     Returns:
-        List[ModelFilesGroup]: List of grouped files.
+        Deque[ModelFilesGroup]: Grouped files.
     """
-    grouped_files: List[ModelFilesGroup] = []
+    grouped_files: Deque[ModelFilesGroup] = deque()
 
     if not extensions_groups and not regex_patterns:
         # If no grouping rules provided, treat each file as a separate group
-        grouped_files = list(map(lambda file: ModelFilesGroup(files=[file]), files))
+        grouped_files = deque(map(lambda file: ModelFilesGroup(files=[file]), files))
         return grouped_files
     
     filenames_to_extensions_mapping = create_filenames_to_extensions_mapping(files)
 
     logger.debug(f"Files to extensions mapping: {filenames_to_extensions_mapping}")
     # Group by extension
-    for extensions_group in extensions_groups:
+    while extensions_groups:
+        extensions_group = extensions_groups.popleft()
         for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
             group = ModelFilesGroup()
             for extension in extensions_group:
@@ -83,11 +85,12 @@ def group_files(
     logger.debug(f"Grouped files after extension grouping: {grouped_files}")
 
     # Group by regex patterns
-    for pattern in regex_patterns:
+    while regex_patterns:
+        pattern = regex_patterns.popleft()
         regex = re.compile(pattern)
         regex_groups = defaultdict(list)
-        for base_name, extensions_mapping_for_base_name in list(filenames_to_extensions_mapping.items()):
-            for extension, files_for_extension in list(extensions_mapping_for_base_name.items()):
+        for base_name, extensions_mapping_for_base_name in filenames_to_extensions_mapping.items():
+            for extension, files_for_extension in extensions_mapping_for_base_name.items():
                 for file in files_for_extension:
                     match = regex.match(file.name)
                     if match:
