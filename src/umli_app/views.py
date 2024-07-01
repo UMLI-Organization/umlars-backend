@@ -74,19 +74,11 @@ def register_user(request: HttpRequest) -> HttpResponse:
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model = UmlModel.objects.prefetch_related("metadata").get(id=pk)
+        uml_model = UmlModel.objects.prefetch_related("metadata", "source_files").get(id=pk)
 
         # Read and decode the file content
         # TODO: redo after final file format decision
-        try:
-            xml_content = uml_model.source_file.read().decode("utf-8")
-
-            import xml.dom.minidom as minidom
-
-            # Pretty-print the XML content
-            pretty_xml = minidom.parseString(xml_content).toprettyxml(indent="  ")
-        except ValueError:
-            pretty_xml = uml_model.formatted_data
+        pretty_xml = uml_model.formatted_data
 
         return render(
             request,
@@ -264,10 +256,10 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
                 
                 if files_form.cleaned_data['dry_run']:
-                    return try_render_forms_for_models(request, uml_models, uml_files_for_models)
+                    return _try_render_forms_for_models(request, uml_models, uml_files_for_models)
 
 
-                return try_save_uml_models(request, uml_models, uml_files_for_models)
+                return _try_save_uml_models(request, uml_models, uml_files_for_models)
 
             else:
                 # Re-render the form with errors
@@ -292,7 +284,7 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         return redirect("home")
 
 
-def try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]):
+def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]):
     file_formsets = list()
     model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
 
@@ -317,7 +309,7 @@ def try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlModel
 
 
 
-def try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]) -> HttpResponse:
+def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]) -> HttpResponse:
     with transaction.atomic():
         for model, model_files in zip(uml_models, uml_files_for_models):
             model.save()
