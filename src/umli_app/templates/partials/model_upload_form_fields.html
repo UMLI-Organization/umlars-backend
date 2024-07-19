@@ -1,4 +1,5 @@
 {% load form_tags %}
+{% load iter_tags %}
 
 {% render_form_with_errors form %}
     
@@ -10,7 +11,8 @@
             {% render_form_with_errors file_form %}
             <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
             <div class="d-none">
-                {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                {{ file_form.DELETE }}  
+                <!-- This is the hidden delete checkbox for file -->
             </div>
         </div>
     {% endfor %}

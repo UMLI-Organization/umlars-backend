@@ -7,16 +7,17 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.forms import BaseFormSet
+from django import forms
 from django.db import transaction
 from django.forms.models import model_to_dict
 
 from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
 from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, add_form_to_formset
+from umli_app.forms import SignUpForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset
 from umli_app.utils.files_utils import decode_file
 from umli_backend.settings import LOGGING
 from umli_app.utils.grouping_utils import group_files, determine_model_name
+from umli_app.exceptions import UnsupportedFileError
 import umli_app.settings
 
 
@@ -213,11 +214,13 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
                 # Process the extension grouping rules
                 extensions_rules: Deque[Set[str]] = deque()
+                logger.info(f"Extensions formset: {list(extension_group_formset)}")
                 for form in extension_group_formset:
                     extensions = form.cleaned_data.get('extensions')
                     if extensions:
                         extensions_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
 
+                logger.info(f"Extensions rules: {extensions_rules}")
                 # Process the regex grouping rules
                 regex_rules: Deque[str] = deque()
                 for form in regex_group_formset:
@@ -241,7 +244,15 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
                     model_files = deque()
                     for file in group.files:
-                        decoded_content = decode_file(file)
+                        try:
+                            logger.info(f"File id : {id(file)}")
+                            decoded_content = decode_file(file)
+                        except UnsupportedFileError as ex:
+                            warning_message = f"File {file.name} could not be decoded: {ex}"
+                            logger.warning(warning_message)
+                            messages.warning(request, warning_message)
+                            continue
+
                         uml_file = UmlFile(
                             model=model,
                             filename=file.name,
@@ -286,25 +297,43 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
 def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]):
     file_formsets = list()
-    model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+    # TODO: extra may be needed to be changed ..
+    models_initial_data = list()
 
     model_forms_ids_gen = range(len(uml_models))
+
 
     for i in model_forms_ids_gen:
         model = uml_models.pop()
         model_files = uml_files_for_models.pop()
-        add_form_to_formset(model_formset, model_to_dict(model))
-        file_formset = EditUmlFileFormset(instance=model, prefix=f'source_files_{i}')
+        logger.info(f"Model files: {model_files}")
+        # add_form_to_formset(model_formset, model_to_dict(model))
+        models_initial_data.append(model_to_dict(model))
 
-        for model_file in model_files:
-            add_form_to_formset(file_formset, model_to_dict(model_file))
+        file_formset_initial_data = list(map(model_to_dict, list(model_files)))
+        logger.info(f"file_formset_initial_data: {file_formset_initial_data}")
 
+        # AddUmlFileFormsetWithExtraOverriden = forms.inlineformset_factory(UmlModel, UmlFile, form=AddUmlFileForm, formset=AddUmlFileFormset, extra=len(file_formset_initial_data), can_delete=True, can_delete_extra=True, fields=("data", "format", "file", 'filename'))
+
+        # class AddUmlFileFormsetWithExtraOverriden(AddUmlFileFormset):
+        #     ...
+        
+        # AddUmlFileFormsetWithExtraOverriden.extra = len(file_formset_initial_data)
+
+        file_formset = AddUmlFileFormset(instance=model, prefix=f'source_files_{i}', initial=file_formset_initial_data)
+        file_formset.extra = len(file_formset_initial_data)
+
+        logger.info(f"file_formset.initial: {file_formset.initial}")
         file_formsets.append(file_formset)
+    
+    model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data)
+    # increase_forms_count_in_formset(model_formset, len(models_initial_data))
+
 
     return render(request, 'review-bulk-upload.html', {
         'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
         'model_formset': model_formset,
-        'empty_file_form': EditUmlFileFormset().empty_form,
+        'empty_file_form': AddUmlFileFormset().empty_form,
     })
 
 
@@ -325,21 +354,35 @@ def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_
 def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
+            logger.info(f"POST request received: {request.POST}")
             model_formset = AddUmlModelFormset(request.POST, prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            logger.info(f"Processing model forms {list(map(lambda form: form.data, model_formset))}")
             if model_formset.is_valid():
                 with transaction.atomic():
                     # This is based on supposition that the order of models in the formset is the same as the order of file groups
                     for i, model_form in enumerate(model_formset):
-                        model = model_form.save()
-                        file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=model)
+                        logger.info(f"Processing model form {model_form.cleaned_data}")
+                        is_form_deleted = model_form.cleaned_data.get('DELETE') in [True, 'on']
+                        logger.info(f"Is form deleted: {is_form_deleted}")
+                        if is_form_deleted:
+                            continue
+                        saved_model = model_form.save()
+                        file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=saved_model)
                         if file_formset.is_valid():
                             file_formset.save()
                         else:
-                            messages.warning(request, f"Files from for model {model.name} could not be uploaded.")
+                            messages.warning(request, f"Files for model: {saved_model.name} could not be uploaded. Errors: {file_formset.errors}")
                     
                 messages.success(request, "Files uploaded successfully.")
                 return redirect('home')
-
+            
+            else:
+                logger.warning("Invalid formset from review")
+                messages.warning(request, "Invalid formset from review")
+                return render(request, 'review-bulk-upload.html', {
+                    'model_formset': model_formset,
+                    'empty_file_form': AddUmlFileFormset().empty_form,
+                })
         else:
             logger.warning(request, "Only POST supported.")
             messages.warning(request, "Only POST requests supported.")

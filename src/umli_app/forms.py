@@ -191,13 +191,13 @@ class AddUmlFileForm(forms.ModelForm):
 
 _AddUmlFileFormsetBase = forms.inlineformset_factory(
     UmlModel, UmlFile, form=AddUmlFileForm, 
-    extra=1, can_delete=True, fields=("data", "format", "file", 'filename')
+    extra=1, can_delete=True, can_delete_extra=True, fields=("data", "format", "file", 'filename')
 )
 
 
 _EditUmlFileFormsetBase = forms.inlineformset_factory(
     UmlModel, UmlFile, form=AddUmlFileForm, 
-    extra=0, can_delete=True, fields=("data", "format", "file", 'filename')
+    extra=0, can_delete=True, can_delete_extra=True, fields=("data", "format", "file", 'filename')
 )
 
 
@@ -265,11 +265,12 @@ class SplitFormsDataForFilesMixin(ProcessFormDataMixin):
                 # -> this would require a new approach to skipping those files, since callables(retrieval functions) would be added for all files
                 # decode_files_callables.append(lambda : decode_file(file_in_memory))
                 try:
-                    logger.debug(f"Creating formset data - decoding file: {file_in_memory.name}")
+                    logger.debug(f"Creating formset data - decoding file with name: {file_in_memory.name}")
 
                     decoded_file = decode_file(file_in_memory)
                 except UnsupportedFileError as ex:
                     logger.warning(f"Method: create_form_copies_config_for_files - error during decoding file: {file_in_memory} - {ex}\n Current filenames list: {filenames}\nCurrent decoded files: {decoded_files}")
+                    # TODO: Make this class inheirit from the base of Formset class and add here to smth like self.errors information
                     # TODO: add information about failed decoding to some internal dict mapping file name to error message and then pass those information to the user as warnings
                     continue
 
@@ -277,10 +278,12 @@ class SplitFormsDataForFilesMixin(ProcessFormDataMixin):
                 filenames.append(file_in_memory.name)
 
             number_of_decoded_files=len(decoded_files)
+
             try:
                 assert number_of_decoded_files == len(filenames)
             except AssertionError:
                 raise ValueError("Number of files is different than number of filenames.")
+            
             
             if decoded_files:
                 new_values_for_fields={'data': decoded_files, 'format': file_format, 'filename': filenames}
@@ -512,26 +515,78 @@ ExtensionsGroupingFormSet = forms.formset_factory(ExtensionsGroupingRuleForm, ex
 RegexGroupingFormSet = forms.formset_factory(RegexGroupingRuleForm, extra=0)
 
 
-AddUmlModelFormset = forms.formset_factory(form=AddUmlModelForm, extra=0, can_delete=True)
+AddUmlModelFormset = forms.formset_factory(form=AddUmlModelForm, extra=0, can_delete=True, can_delete_extra=True)
 
 
-def add_form_to_formset(formset: forms.BaseFormSet, form_data: Dict[str, Any]) -> None:
-    logger.debug(f"Method: add_form_to_formset - form_data: {form_data}")
-    # Get the management form data
+def formset_factory_with_overriden_attributes(formset_base_class: type["forms.BaseFormSet"], **attributes_to_override) -> type["forms.BaseFormSet"]:
+    class FormsetWithAttributesOverriden(formset_base_class):
+        for attr_name, attr_value in attributes_to_override.items():
+            vars()[attr_name] = attr_value
+
+
+    return FormsetWithAttributesOverriden
+
+def increase_forms_count_in_formset(formset: forms.BaseFormSet, increment: int) -> None:
     management_form_data = formset.management_form.initial
-    total_forms = int(management_form_data['TOTAL_FORMS'])
+    logger.info(f"Method: increase_forms_count_in_formset - management_form_data: {management_form_data}")
 
-    # Increment the total forms count
-    management_form_data['TOTAL_FORMS'] = total_forms + 1
+    incremented_total_forms = int(management_form_data['TOTAL_FORMS']) + increment
+    incremented_initial_forms = int(management_form_data['INITIAL_FORMS']) + increment
 
-    # Create a new form instance with initial data if needed
-    new_form = formset.form(initial=form_data, prefix=f'{formset.prefix}-{total_forms}')
-    logger.debug(f"Method: add_form_to_formset - new_form initial data: {new_form.initial}")
 
-    # Append the new form to the formset's forms
-    formset.forms.append(new_form)
+    management_form_data['TOTAL_FORMS'] = incremented_total_forms
+    management_form_data['INITIAL_FORMS'] = incremented_initial_forms
 
-    # Update the formset's management form data
     formset.management_form.initial = management_form_data
-    formset._total_form_count = total_forms + 1
+    formset._total_form_count = incremented_total_forms
+    formset._initial_form_count = incremented_initial_forms
+
+    logger.info(f"Changed management form initial data: {formset.management_form.initial}")
+    # formset.extra = 2
+
+
+
+# def add(formset: forms.BaseFormSet, **kwargs: Any):
+#     tfc = formset.total_form_count()
+#     formset.forms.append(formset._construct_form(tfc, **kwargs))
+#     formset.forms[tfc].is_bound = False
+
+#     # make data mutable
+#     formset.data = formset.data.copy()
+
+#     # increase hidden form counts
+#     total_count_name = '%s-%s' % (formset.management_form.prefix, TOTAL_FORM_COUNT)
+#     initial_count_name = '%s-%s' % (formset.management_form.prefix, INITIAL_FORM_COUNT)
+#     formset.data[total_count_name] = formset.management_form.cleaned_data[TOTAL_FORM_COUNT] + 1
+#     formset.data[initial_count_name] = formset.management_form.cleaned_data[INITIAL_FORM_COUNT] + 1
+
+
+# def add_form_to_formset(formset: forms.BaseFormSet, form_data: Dict[str, Any]) -> None:
+#     logger.debug(f"Method: add_form_to_formset - form_data: {form_data}")
+#     # Get the management form data
+#     management_form_data = formset.management_form.initial
+#     total_forms = int(management_form_data['TOTAL_FORMS'])
+
+#     # Increment the total forms count
+#     management_form_data['TOTAL_FORMS'] = total_forms + 1
+
+#     # Create a new form instance with initial data if needed
+#     import copy
+#     new_form = copy.deepcopy(formset.empty_form)
+#     new_form.prefix = formset.prefix
+#     new_form.initial = form_data
+
+#     # new_form = formset.empty_form
+#     # new_form.prefix = formset.prefix
+#     # new_form.initial = form_data
+    
+#     # new_form = formset.form(initial=form_data, prefix=f'{formset.prefix}-{total_forms}')
+#     logger.debug(f"Method: add_form_to_formset - new_form initial data: {new_form.initial}")
+#     # logger.info(f"New form: {new_form}")
+#     # Append the new form to the formset's forms
+#     formset.forms.append(new_form)
+
+#     # Update the formset's management form data
+#     formset.management_form.initial = management_form_data
+#     formset._total_form_count = total_forms + 1
 

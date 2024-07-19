@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load form_tags %}
+{% load iter_tags %}
 
 {% block content %}
 <div class="container mt-4">
@@ -24,11 +25,12 @@
             {% for model_form, file_formset in model_forms_with_file_formsets %}
                 <div class="model-form-container border rounded p-3 mb-4 bg-light">
                     <h5>Model: {{ model_form.instance.name }}</h5>
+                    {{ model_form.id }}
                     {% render_model_upload_form_fields model_form file_formset %}
                     
                     <div class="w-100 d-flex justify-content-end model-form-container__delete-section">
                         <div class="d-none">
-                            {{ file_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                            {{ model_form.DELETE }}  <!-- This is the hidden delete checkbox -->
                         </div>
                         <button type="button" class="btn btn-danger model-form-container__delete-model-button me-2">Delete UML Model</button>
                     </div>
@@ -45,14 +47,19 @@
 <!-- TODO: doesnt work -->
 <script>
     $(document).ready(function() {
+        const formsetPrefix = "{{ model_formset.prefix }}";
+        const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
+        const totalForms = $(`#${totalFormsInputId}`);
+
         // Event delegation to handle delete model button clicks for model forms
         $(document).on('click', '.model-form-container__delete-model-button', function(e) {
+            let formNum = parseInt(totalForms.val());
             e.preventDefault();
             const formContainer = $(this).closest('.model-form-container');
             formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
-            formContainer.hide();
+            formContainer.remove();
+            totalForms.val(formNum - 1);
         });
-
 
     });
 </script>

@@ -38,14 +38,26 @@
                   <td>{{ uml_model.tech_valid_from }}</td>
                   <td>{% render_json uml_model.metadata.data %}</td>
                   <td>
-                      <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">View</a>
-                      <a href="{% url 'update-uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
-                      <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>
+                      <div class="btn-group text-center" role="group">
+                          <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">View</a>
+                          <a href="{% url 'update-uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
+                          <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>
+                      </div>
                   </td>
               </tr>
               {% endfor %}
           </tbody>
       </table>
+
+      {% else %}
+
+      <div class="col-md-6 offset-md-3"> 
+          <h1 class="mb-4 mt-4">No UML models found</h1>
+          <a href="{% url 'add-uml-model' %}" class="btn btn-success">+ Create UML model</a>
+      </div>
+
+
+
       {% endif %}
     
     {% else %}

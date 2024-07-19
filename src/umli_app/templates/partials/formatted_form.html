@@ -9,8 +9,8 @@
 {% endif %}
 
 <div class="row">
+    {{ form.id }}
     {% for field in form %}
-        {{ form.id }}
         {% if not field.is_hidden and field.name != 'DELETE' %}
             <div class="form-group col-8 col-md-6 mt-2 {% if field.errors %}has-error{% endif %}">
                 <label>
