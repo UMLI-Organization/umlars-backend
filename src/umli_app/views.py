@@ -2,7 +2,6 @@ import logging
 from typing import Deque, Set
 from collections import deque
 
-import pika
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
@@ -11,7 +10,7 @@ from django import forms
 from django.db import transaction
 from django.forms.models import model_to_dict
 
-from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
+from umli_app.utils.translation_utils import translate_uml_model
 from umli_app.models import UmlModel, UmlFile
 from umli_app.forms import SignUpForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset
 from umli_app.utils.files_utils import decode_file
@@ -106,25 +105,6 @@ def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("home")
 
 
-def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
-    if request.user.is_authenticated:
-        try:
-            # TODO: inject with dependency injection
-            # TODO: take from env
-            connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
-            channel = connection.channel()
-
-            send_uploaded_file_message(
-                channel,
-                create_message_data(
-                    id=pk,
-                )
-            )
-        except Exception as ex:
-            error_message = f"Connection with the translation service cannot be established: {ex}"
-            messages.warning(request, error_message)
-            return redirect("home")
-
 
 def add_uml_model(request: HttpRequest) -> HttpResponse:
     SOURCE_FILES_FORMSET_PREFIX = "source_files"
@@ -140,6 +120,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                     if formset.is_valid():
                         added_uml_files = formset.save()
                         logger.info(f"UML files: {added_uml_files} have been added.")
+                        translate_uml_model(request, added_uml_model.id)
                         # TODO: add translate for each file
                         messages.success(request, f"UML model: {added_uml_model} has been added.")
                         logger.info(f"UML model: {added_uml_model} has been added.")
@@ -179,6 +160,8 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                         added_uml_files = formset.save()
                         logger.info(f"UML files: {added_uml_files} have been added.")
                         # TODO: add translate for each file
+                        if formset.has_changed():
+                            translate_uml_model(request, added_uml_model.id)
                         messages.success(request, f"UML model: {added_uml_model} has been added.")
                         logger.info(f"UML model: {added_uml_model} has been added.")
                         return redirect("home")
@@ -214,13 +197,13 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
                 # Process the extension grouping rules
                 extensions_rules: Deque[Set[str]] = deque()
-                logger.info(f"Extensions formset: {list(extension_group_formset)}")
+                logger.debug(f"Extensions formset: {list(extension_group_formset)}")
                 for form in extension_group_formset:
                     extensions = form.cleaned_data.get('extensions')
                     if extensions:
                         extensions_rules.append(set(ext.strip('. ') for ext in extensions.split(',')))
 
-                logger.info(f"Extensions rules: {extensions_rules}")
+                logger.debug(f"Extensions rules: {extensions_rules}")
                 # Process the regex grouping rules
                 regex_rules: Deque[str] = deque()
                 for form in regex_group_formset:
@@ -345,6 +328,9 @@ def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_
             for model_file in model_files:
                 model_file.model = model
                 model_file.save() 
+            
+            translate_uml_model(request, model.id)
+            
 
     messages.success(request, "Files uploaded successfully.")
     return redirect('home')
@@ -370,6 +356,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                         file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=saved_model)
                         if file_formset.is_valid():
                             file_formset.save()
+                            translate_uml_model(request, saved_model.id)
                         else:
                             messages.warning(request, f"Files for model: {saved_model.name} could not be uploaded. Errors: {file_formset.errors}")
                     

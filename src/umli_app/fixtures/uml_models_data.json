@@ -8,7 +8,7 @@
             "tech_active_flag": true,
             "name": "Sample Model",
             "description": null,
-            "formatted_data": "<E.g. Json content here>"
+            "formatted_data": "{'model': {'id': 14, 'name': 'Sample Model', 'description': 'This is a sample model', 'elements': [{'id': 12, 'type': 'UmlPackage', 'elements': [{'id': 15, 'type': 'UmlInterface', 'id_ref']}], 'diagrams': [{'name': 'Class Diagram', 'elements': [{'id': 1, 'type': 'UmlClass'}, {'id': 20, 'type': 'UmlInterface']}"
         }
     },
     {
