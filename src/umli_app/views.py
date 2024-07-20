@@ -6,13 +6,12 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django import forms
 from django.db import transaction
 from django.forms.models import model_to_dict
 
 from umli_app.utils.translation_utils import translate_uml_model
 from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset
+from umli_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
 from umli_app.utils.files_utils import decode_file
 from umli_backend.settings import LOGGING
 from umli_app.utils.grouping_utils import group_files, determine_model_name
@@ -74,6 +73,36 @@ def register_user(request: HttpRequest) -> HttpResponse:
         form = SignUpForm()
 
     return render(request, "register.html", {"form": form})
+
+
+def delete_current_user(request: HttpRequest) -> HttpResponse:
+    user = request.user
+    if user.is_authenticated:
+        user.delete()
+        messages.success(request, "User has been deleted.")
+        return redirect("home")
+    else:
+        messages.warning(request, "You need to be logged in to delete the user...")
+        return redirect("home")
+
+
+def profile(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            form = EditUserForm(request.POST, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Profile has been updated.")
+                return redirect("home")
+            else:
+                return render(request, "profile.html", {"form": form})
+        else:
+            form = EditUserForm(instance=request.user)
+            return render(request, "profile.html", {"form": form})
+    
+    else:
+        messages.warning(request, "You need to be logged in to view this page")
+        return redirect("home")
 
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
@@ -384,4 +413,24 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
             })
     else:
         messages.warning(request, "You need to be logged in to review the bulk upload.")
+        return redirect("home")
+
+
+def change_password(request: HttpRequest) -> HttpResponse:
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            form = ChangePasswordForm(request.user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('home')
+            else:
+                messages.error(request, 'Please correct the error below.')
+        else:
+            form = ChangePasswordForm(request.user)
+        return render(request, 'change-password.html', {
+            'form': form
+        })
+    else:
+        messages.warning(request, "You need to be logged in to change the password.")
         return redirect("home")
