@@ -29,7 +29,11 @@ def home(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         return login_user(request)
     else:
-        uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all()
+        searched_model_name = request.GET.get('model_name')
+        if searched_model_name is not None:
+            uml_models = UmlModel.objects.filter(name__icontains=searched_model_name)
+        else:
+            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all()
         return render(request, "home.html", {"uml_models": uml_models})
 
 
