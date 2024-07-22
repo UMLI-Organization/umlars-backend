@@ -47,7 +47,7 @@
             </div>
             
             <div class="mt-4 w-100 d-flex justify-content-end">
-                <a href="{% url 'home' %}" class="btn btn-secondary mb-4">Back</a>
+                <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary mb-4">Back</a>
             </div>
         </form>
     </div>

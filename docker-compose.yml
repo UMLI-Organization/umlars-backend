@@ -14,6 +14,14 @@ services:
     # TODO: Change to production version when released
     # command: make django-start
     command: make django-start-dev
+
+    # TODO: Remove this volume mapping in production 
+    volumes:
+      - .:/code
+  
+    networks:
+      - net-backend
+
     ports:
       - 8000:8000
     env_file:
@@ -21,10 +29,7 @@ services:
     depends_on:
       - db
 
-    # TODO: Remove this volume mapping in production 
-    volumes:
-      - .:/code
-  
+
   db:
     image: postgres:12.0-alpine
     restart: unless-stopped
@@ -33,6 +38,10 @@ services:
     # Source: https://hub.docker.com/_/postgres#:~:text=have%20found%20useful.-,Environment%20Variables,-The%20PostgreSQL%20image
     volumes:
       - db_postgres_data:/var/lib/postgresql/data/
+
+    networks:
+      - net-backend
+
     env_file:
       - ./.env.dev
     ports:
@@ -48,8 +57,20 @@ services:
       volumes:
         - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/mnesia/
         - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+      networks:
+        - net-backend
+
       env_file:
         - ./.env.dev
       restart: always
+
+
 volumes:
   db_postgres_data:
+
+
+networks:
+  net-backend:
+    driver: bridge
+    name: umlars-net-backend

@@ -18,13 +18,13 @@
 
             
             <div class="mt-4">
-                <a href="{% url 'bulk-upload-uml-models' %}" class="btn btn-secondary mb-4">Back</a>
+                <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary mb-4">Back</a>
                 <button type="submit" class="btn btn-primary mb-4">Submit All Models</button>
             </div>
 
             {% for model_form, file_formset in model_forms_with_file_formsets %}
                 <div class="model-form-container border rounded p-3 mb-4 bg-light">
-                    <h5>Model: {{ model_form.instance.name }}</h5>
+                    <h5>Model: {{ model_form.name.value }}</h5>
                     {{ model_form.id }}
                     {% render_model_upload_form_fields model_form file_formset %}
                     

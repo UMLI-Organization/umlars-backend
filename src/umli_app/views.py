@@ -153,6 +153,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                     if formset.is_valid():
                         added_uml_files = formset.save()
                         logger.info(f"UML files: {added_uml_files} have been added.")
+                        
                         translate_uml_model(request, added_uml_model.id)
                         # TODO: add translate for each file
                         messages.success(request, f"UML model: {added_uml_model} has been added.")

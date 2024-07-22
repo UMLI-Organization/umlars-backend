@@ -9,7 +9,7 @@
             {% render_model_upload_form form formset %}
             
         <div class="w-100 d-flex justify-content-end">
-            <a href="{% url 'home' %}" class="btn btn-secondary mt-4 mb-4">Back</a>
+            <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary mt-4 mb-4">Back</a>
         </div>
 
     </div>

@@ -179,3 +179,7 @@ LOGGING = {
         },
     },
 }
+
+# File upload settings
+# Increased to allow POST requests with large data stored in the body
+DATA_UPLOAD_MAX_MEMORY = 52428800  # 50MB 
