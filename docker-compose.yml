@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 services:
   backend:
     image: "umli-backend:dev"
@@ -15,10 +15,10 @@ services:
     # command: make django-start
     command: make django-start-dev
 
-    # TODO: Remove this volume mapping in production 
+    # TODO: Remove this volume mapping in production
     volumes:
       - .:/code
-  
+
     networks:
       - net-backend
 
@@ -28,7 +28,6 @@ services:
       - ./.env.dev
     depends_on:
       - db
-
 
   db:
     image: postgres:12.0-alpine
@@ -48,27 +47,27 @@ services:
       - 50432:5432
 
   rabbitmq:
-      image: rabbitmq:3-management
-      container_name: rabbitmq
-      hostname: 'rabbitmq'
-      ports:
-        - "5672:5672"
-        - "15672:15672"
-      volumes:
-        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/mnesia/
-        - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia/
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
-      networks:
-        - net-backend
+    networks:
+      - net-backend
 
-      env_file:
-        - ./.env.dev
-      restart: always
+    env_file:
+      - ./.env.dev
 
+    restart: always
 
 volumes:
+  rabbitmq_data:
   db_postgres_data:
-
 
 networks:
   net-backend:

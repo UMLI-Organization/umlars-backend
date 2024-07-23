@@ -12,7 +12,7 @@ def translate_uml_model(request: HttpRequest, model_pk: int) -> HttpResponse:
     try:
         # TODO: inject with dependency injection
         # TODO: take from env
-        connection = pika.BlockingConnection(pika.ConnectionParameters(settings.MESSAGE_QUUEUE_HOST))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=settings.MESSAGE_BROKER_HOST, port=settings.MESSAGE_BROKER_PORT, credentials=pika.PlainCredentials(settings.MESSAGE_BROKER_USER, settings.MESSAGE_BROKER_PASSWORD)))
         channel = connection.channel()
 
         send_uploaded_file_message(
