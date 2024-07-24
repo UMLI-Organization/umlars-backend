@@ -1,6 +1,6 @@
 from rest_framework import routers
 
-from umli_app.viewsets import UmlModelViewSet, UmlModelMetadataViewSet
+from umlars_app.viewsets import UmlModelViewSet, UmlModelMetadataViewSet
 
 router = routers.SimpleRouter()
 

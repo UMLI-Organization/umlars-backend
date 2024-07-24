@@ -7,9 +7,9 @@ from collections import deque
 
 from django.core.files.uploadedfile import UploadedFile
 
-from umli_app.exceptions import UnsupportedFileError
-from umli_backend.settings import LOGGING
-from umli_app.utils.logging import get_new_sublogger
+from umlars_app.exceptions import UnsupportedFileError
+from umlars_backend.settings import LOGGING
+from umlars_app.utils.logging import get_new_sublogger
 
 
 logger = get_new_sublogger(__name__)

@@ -1,11 +1,11 @@
 import json
 from typing import Optional
 import pika
-from umli_app import settings
-from umli_app.exceptions import QueueUnavailableError
-from umli_app.utils.logging import get_new_sublogger
-from umli_app.serializers import UmlModelTranslationQueueMessageSerializer
-from umli_app.models import UmlModel
+from umlars_app import settings
+from umlars_app.exceptions import QueueUnavailableError
+from umlars_app.utils.logging import get_new_sublogger
+from umlars_app.serializers import UmlModelTranslationQueueMessageSerializer
+from umlars_app.models import UmlModel
 
 
 class MessageBrokerProducer:

@@ -8,14 +8,14 @@ from django.contrib import messages
 from django.db import transaction
 from django.forms.models import model_to_dict
 
-from umli_app.utils.translation_utils import schedule_translate_uml_model
-from umli_app.models import UmlModel, UmlFile
-from umli_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
-from umli_app.utils.files_utils import decode_file
-from umli_app.utils.grouping_utils import group_files, determine_model_name
-from umli_app.exceptions import UnsupportedFileError
-import umli_app.settings
-from umli_app.utils.logging import get_new_sublogger
+from umlars_app.utils.translation_utils import schedule_translate_uml_model
+from umlars_app.models import UmlModel, UmlFile
+from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
+from umlars_app.utils.files_utils import decode_file
+from umlars_app.utils.grouping_utils import group_files, determine_model_name
+from umlars_app.exceptions import UnsupportedFileError
+import umlars_app.settings
+from umlars_app.utils.logging import get_new_sublogger
 
 logger = get_new_sublogger(__name__)
 
@@ -252,7 +252,7 @@ def bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 while grouped_files:
                     group = grouped_files.pop()
                     model_name = determine_model_name(group)
-                    model = UmlModel(name=model_name, description=umli_app.settings.BULK_UPLOAD_MODEL_DESCRIPTION)
+                    model = UmlModel(name=model_name, description=umlars_app.settings.BULK_UPLOAD_MODEL_DESCRIPTION)
                     uml_models.append(model)
 
                     model_files = deque()
@@ -339,7 +339,7 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
         logger.info(f"file_formset.initial: {file_formset.initial}")
         file_formsets.append(file_formset)
     
-    model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data)
+    model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data)
     # increase_forms_count_in_formset(model_formset, len(models_initial_data))
 
 
@@ -385,7 +385,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
             logger.info(f"POST request received: {request.POST}")
-            model_formset = AddUmlModelFormset(request.POST, prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            model_formset = AddUmlModelFormset(request.POST, prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
             logger.info(f"Processing model forms {list(map(lambda form: form.data, model_formset))}")
             if model_formset.is_valid():
                 # This is based on supposition that the order of models in the formset is the same as the order of file groups
@@ -418,7 +418,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         else:
             logger.warning(request, "Only POST supported.")
             messages.warning(request, "Only POST requests supported.")
-            model_formset = AddUmlModelFormset(prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
             return render(request, 'review-bulk-upload.html', {
                 'model_formset': model_formset,
                 'empty_file_form': AddUmlFileFormset().empty_form,

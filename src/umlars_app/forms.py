@@ -17,10 +17,10 @@ from django.http import QueryDict
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.datastructures import MultiValueDict
 
-from umli_app.models import UmlModel, UmlFile
-from umli_app.utils.files_utils import decode_file
-from umli_app.exceptions import UnsupportedFileError
-from umli_app.utils.logging import get_new_sublogger
+from umlars_app.models import UmlModel, UmlFile
+from umlars_app.utils.files_utils import decode_file
+from umlars_app.exceptions import UnsupportedFileError
+from umlars_app.utils.logging import get_new_sublogger
 
 logger = get_new_sublogger(__name__)
 

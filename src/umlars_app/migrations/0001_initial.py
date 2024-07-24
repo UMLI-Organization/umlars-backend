@@ -75,7 +75,7 @@ class Migration(migrations.Migration):
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="source_files",
-                        to="umli_app.umlmodel",
+                        to="umlars_app.umlmodel",
                     ),
                 ),
             ],
@@ -114,7 +114,7 @@ class Migration(migrations.Migration):
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="metadata",
-                        to="umli_app.umlmodel",
+                        to="umlars_app.umlmodel",
                     ),
                 ),
             ],

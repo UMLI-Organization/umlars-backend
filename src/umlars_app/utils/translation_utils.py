@@ -2,8 +2,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.contrib import messages
 
-from umli_app.message_broker.producer import send_uploaded_model_message, create_message_data
-from umli_app.models import UmlModel
+from umlars_app.message_broker.producer import send_uploaded_model_message, create_message_data
+from umlars_app.models import UmlModel
 
 
 def schedule_translate_uml_model(request: HttpRequest, model: UmlModel) -> HttpResponse:

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from umli_app.models import UmlModel, UmlModelMetadata, UmlFile
+from umlars_app.models import UmlModel, UmlModelMetadata, UmlFile
 
 
 class UmlModelSerializer(serializers.ModelSerializer):

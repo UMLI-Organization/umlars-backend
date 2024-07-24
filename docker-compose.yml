@@ -1,16 +1,16 @@
 version: "3.8"
 services:
   backend:
-    image: "umli-backend:dev"
+    image: "umlars-backend:dev"
     build:
-      target: umli_backend_dev_build
+      target: umlars_backend_dev_build
       context: .
       cache_from:
-        - "umli-backend:dev"
-        - "umli-backend:latest"
+        - "umlars-backend:dev"
+        - "umlars-backend:latest"
         - "*"
       args:
-        UMLI_IN_ENV: DEV
+        UMLARS_IN_ENV: DEV
     # TODO: Change to production version when released
     # command: make django-start
     command: make django-start-dev

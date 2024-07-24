@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "umli-backend"
+name = "umlars-backend"
 version = "0.1.0"
 description = ""
 authors = ["filip <filip.pawlowski001@gmail.com>"]

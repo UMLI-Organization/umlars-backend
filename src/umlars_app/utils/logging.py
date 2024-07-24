@@ -1,6 +1,6 @@
 import logging
 
-from umli_backend import settings
+from umlars_backend import settings
 
 
 def get_new_sublogger(logger_name: str) -> logging.Logger:

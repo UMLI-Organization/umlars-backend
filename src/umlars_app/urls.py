@@ -2,8 +2,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from umli_app.routers import router
-from umli_app import views
+from umlars_app.routers import router
+from umlars_app import views
 
 urlpatterns = [
     path("", views.home, name="home"),
