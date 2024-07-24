@@ -1,25 +1,16 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.contrib import messages
-import pika
 
-from umli_app import settings
-from umli_app.message_broker.producer import send_uploaded_file_message, create_message_data
-
+from umli_app.message_broker.producer import send_uploaded_model_message, create_message_data
+from umli_app.models import UmlModel
 
 
-def translate_uml_model(request: HttpRequest, model_pk: int) -> HttpResponse:
+def schedule_translate_uml_model(request: HttpRequest, model: UmlModel) -> HttpResponse:
     try:
-        # TODO: inject with dependency injection
-        # TODO: take from env
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=settings.MESSAGE_BROKER_HOST, port=settings.MESSAGE_BROKER_PORT, credentials=pika.PlainCredentials(settings.MESSAGE_BROKER_USER, settings.MESSAGE_BROKER_PASSWORD)))
-        channel = connection.channel()
-
-        send_uploaded_file_message(
-            channel,
-            create_message_data(
-                id=model_pk,
-            )   
+        message_data = create_message_data(model)
+        send_uploaded_model_message(
+            message_data=message_data,
         )
     except Exception as ex:
         error_message = f"Connection with the translation service cannot be established: {ex}"

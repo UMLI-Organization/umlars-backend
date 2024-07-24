@@ -1,4 +1,3 @@
-import logging
 from typing import Deque, Set
 from collections import deque
 
@@ -9,19 +8,16 @@ from django.contrib import messages
 from django.db import transaction
 from django.forms.models import model_to_dict
 
-from umli_app.utils.translation_utils import translate_uml_model
+from umli_app.utils.translation_utils import schedule_translate_uml_model
 from umli_app.models import UmlModel, UmlFile
 from umli_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
 from umli_app.utils.files_utils import decode_file
-from umli_backend.settings import LOGGING
 from umli_app.utils.grouping_utils import group_files, determine_model_name
 from umli_app.exceptions import UnsupportedFileError
 import umli_app.settings
+from umli_app.utils.logging import get_new_sublogger
 
-
-main_logger_name = next(iter(LOGGING['loggers'].keys()))
-logger = logging.getLogger(main_logger_name).getChild(__name__)
-
+logger = get_new_sublogger(__name__)
 
 def home(request: HttpRequest) -> HttpResponse:
 
@@ -154,7 +150,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                         added_uml_files = formset.save()
                         logger.info(f"UML files: {added_uml_files} have been added.")
                         
-                        translate_uml_model(request, added_uml_model.id)
+                        schedule_translate_uml_model(request, added_uml_model)
                         # TODO: add translate for each file
                         messages.success(request, f"UML model: {added_uml_model} has been added.")
                         logger.info(f"UML model: {added_uml_model} has been added.")
@@ -195,7 +191,7 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                         logger.info(f"UML files: {added_uml_files} have been added.")
                         # TODO: add translate for each file
                         if formset.has_changed():
-                            translate_uml_model(request, added_uml_model.id)
+                            schedule_translate_uml_model(request, added_uml_model)
                         messages.success(request, f"UML model: {added_uml_model} has been added.")
                         logger.info(f"UML model: {added_uml_model} has been added.")
                         return redirect("home")
@@ -356,19 +352,33 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
 
 
 def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]) -> HttpResponse:
-    with transaction.atomic():
-        for model, model_files in zip(uml_models, uml_files_for_models):
+    for model, model_files in zip(uml_models, uml_files_for_models):
+        with transaction.atomic():
             model.save()
             for model_file in model_files:
                 model_file.model = model
                 model_file.save() 
             
-            translate_uml_model(request, model.id)
-            
+        schedule_translate_uml_model(request, model)
 
     messages.success(request, "Files uploaded successfully.")
     return redirect('home')
 
+
+# TODO: add button to translate manually
+async def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if (await request.auser()).is_authenticated:
+        try:
+            model = UmlModel.objects.get(id=pk)
+            await schedule_translate_uml_model(request, model)
+            messages.success(request, f"Model {model.name} has been sent for translation.")
+            return redirect("home")
+        except UmlModel.DoesNotExist:
+            messages.warning(request, f"Model with id {pk} does not exist.")
+            return redirect("home")
+    else:
+        messages.warning(request, "You need to be logged in to translate the UML model.")
+        return redirect("home")
 
 
 def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
@@ -378,19 +388,20 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
             model_formset = AddUmlModelFormset(request.POST, prefix=umli_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
             logger.info(f"Processing model forms {list(map(lambda form: form.data, model_formset))}")
             if model_formset.is_valid():
-                with transaction.atomic():
-                    # This is based on supposition that the order of models in the formset is the same as the order of file groups
-                    for i, model_form in enumerate(model_formset):
-                        logger.info(f"Processing model form {model_form.cleaned_data}")
-                        is_form_deleted = model_form.cleaned_data.get('DELETE') in [True, 'on']
-                        logger.info(f"Is form deleted: {is_form_deleted}")
-                        if is_form_deleted:
-                            continue
+                # This is based on supposition that the order of models in the formset is the same as the order of file groups
+                for i, model_form in enumerate(model_formset):
+                    logger.info(f"Processing model form {model_form.cleaned_data}")
+                    is_form_deleted = model_form.cleaned_data.get('DELETE') in [True, 'on']
+                    logger.info(f"Is form deleted: {is_form_deleted}")
+                    if is_form_deleted:
+                        continue
+
+                    with transaction.atomic():
                         saved_model = model_form.save()
                         file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=saved_model)
                         if file_formset.is_valid():
                             file_formset.save()
-                            translate_uml_model(request, saved_model.id)
+                            schedule_translate_uml_model(request, saved_model)
                         else:
                             messages.warning(request, f"Files for model: {saved_model.name} could not be uploaded. Errors: {file_formset.errors}")
                     

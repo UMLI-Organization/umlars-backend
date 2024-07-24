@@ -9,11 +9,10 @@ from django.core.files.uploadedfile import UploadedFile
 
 from umli_app.exceptions import UnsupportedFileError
 from umli_backend.settings import LOGGING
+from umli_app.utils.logging import get_new_sublogger
 
 
-main_logger_name = next(iter(LOGGING['loggers'].keys()))
-logger = logging.getLogger(main_logger_name).getChild(__name__)
-
+logger = get_new_sublogger(__name__)
 
 
 @dataclasses.dataclass
