@@ -1,34 +1,35 @@
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework import status
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from umlars_app.models import UmlModel, UmlModelMetadata
-from umlars_app.serializers import UmlModelSerializer, UmlModelMetadataSerializer, UmlFileSerializer
+from umlars_app.models import UmlModel, UmlModelMetadata, UmlFile
+from umlars_app.serializers import UmlModelSerializer, UmlModelMetadataSerializer, UmlFileSerializer, UmlModelFilesSerializer
 
 
 class UmlModelViewSet(viewsets.ModelViewSet):
     queryset = UmlModel.objects.all()
     serializer_class = UmlModelSerializer
-    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
 
 class UmlModelMetadataViewSet(viewsets.ModelViewSet):
     queryset = UmlModelMetadata.objects.all()
     serializer_class = UmlModelMetadataSerializer
-    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
 
-class UmlFileViewSet(viewsets.GenericViewSet):
+class UmlFileViewSet(viewsets.ModelViewSet):
+    queryset = UmlFile.objects.all()
     serializer_class = UmlFileSerializer
-    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    def get( self, request: Request, pk: int) -> Response:
-        try:
-            uml_model = UmlModel.objects.get(pk=pk)
-            files = uml_model.source_files.all()
-            serializer = self.get_serializer(files, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except UmlModel.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+
+class UmlModelFilesViewSet(viewsets.ModelViewSet):
+    queryset = UmlModel.objects.all().prefetch_related('source_files')
+    serializer_class = UmlModelFilesSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
+    # TODO: permission_classes = [IsAuthenticated]

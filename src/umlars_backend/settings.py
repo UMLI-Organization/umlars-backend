@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-b_izp59z-hvml4$_9mvu(ur4rnlfegb_wpy3^$tg1o4z=^nlvy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "umlars-backend-backend-1",]
 
 
 # Application definition
@@ -168,7 +168,7 @@ LOGGING = {
         "file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": "umlars.log",
+            "filename": "logs/umlars.log",
         },
     },
     "loggers": {
