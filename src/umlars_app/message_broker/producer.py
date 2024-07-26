@@ -4,7 +4,7 @@ import pika
 from umlars_app import settings
 from umlars_app.exceptions import QueueUnavailableError
 from umlars_app.utils.logging import get_new_sublogger
-from umlars_app.serializers import UmlModelTranslationQueueMessageSerializer
+from umlars_app.rest.serializers import UmlModelTranslationQueueMessageSerializer
 from umlars_app.models import UmlModel
 
 

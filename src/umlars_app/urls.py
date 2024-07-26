@@ -2,7 +2,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from umlars_app.routers import router
+from umlars_app.rest.routers import urlpatterns as rest_viewsets_urlpatterns
+from umlars_app.rest.urls import urlpatterns as rest_views_urlpatterns
 from umlars_app import views
 
 urlpatterns = [
@@ -19,7 +20,10 @@ urlpatterns = [
     path("bulk-upload-uml-models/", views.bulk_upload_uml_models, name="bulk-upload-uml-models"),
     path("review-bulk-upload-uml-models/", views.review_bulk_upload_uml_models, name="review-bulk-upload-uml-models"),
 
-    path('api/', include((router.urls, 'core_api'), namespace='core_api')),
+
+    # path('api/v1/', include('rest_framework.urls')),
+    path('api/v1/', include((rest_viewsets_urlpatterns, 'rest_viewsets'), namespace='rest_viewsets')),
+    path('api/v1/', include((rest_views_urlpatterns, 'rest_views'), namespace='rest_views')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
 # static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

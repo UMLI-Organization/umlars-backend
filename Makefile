@@ -36,7 +36,7 @@ django-start-dev:
 	poetry run python -Wd src/manage.py makemigrations
 	poetry run python -Wd src/manage.py migrate
 	poetry run python -Wd src/manage.py create_superuser_if_none_exists \
-	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
+	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL} --password ${DJANGO_SUPERUSER_PASSWORD}
 	poetry run python -Wd src/manage.py loaddata src/umlars_app/fixtures/uml_models_data.json
 	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
