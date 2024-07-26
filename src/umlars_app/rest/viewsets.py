@@ -35,8 +35,7 @@ class UmlModelFilesViewSet(viewsets.ModelViewSet):
     queryset = UmlModel.objects.all().prefetch_related('source_files')
     serializer_class = UmlModelFilesSerializer
     authentication_classes = [JWTAuthentication, SessionAuthentication, BasicAuthentication]
-    permission_classes = [AllowAny]
-    # TODO: permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
 
 
