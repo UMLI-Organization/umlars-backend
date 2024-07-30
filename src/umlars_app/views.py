@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db import transaction
 from django.forms.models import model_to_dict
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
 from umlars_app.models import UmlModel, UmlFile
@@ -19,16 +20,27 @@ from umlars_app.utils.logging import get_new_sublogger
 
 logger = get_new_sublogger(__name__)
 
-def home(request: HttpRequest) -> HttpResponse:
 
+def home(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         return login_user(request)
     else:
         searched_model_name = request.GET.get('model_name')
         if searched_model_name is not None:
-            uml_models = UmlModel.objects.filter(name__icontains=searched_model_name)
+            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").filter(name__icontains=searched_model_name).order_by("id")
         else:
-            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all()
+            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all().order_by("id")
+
+        # Pagination
+        paginator = Paginator(uml_models, 10)  # Show 10 models per page
+        page = request.GET.get('page')
+        try:
+            uml_models = paginator.page(page)
+        except PageNotAnInteger:
+            uml_models = paginator.page(1)
+        except EmptyPage:
+            uml_models = paginator.page(paginator.num_pages)
+
         return render(request, "home.html", {"uml_models": uml_models})
 
 
