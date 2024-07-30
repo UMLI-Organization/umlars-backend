@@ -409,7 +409,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                 return redirect('home')
             
             else:
-                logger.warning("Invalid formset from review")
+                logger.warning("Invalid formset from review " + str(model_formset.errors))
                 messages.warning(request, "Invalid formset from review")
                 return render(request, 'review-bulk-upload.html', {
                     'model_formset': model_formset,
