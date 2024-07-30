@@ -209,3 +209,6 @@ LOGGING = {
 # File upload settings
 # Increased to allow POST requests with large data stored in the body
 DATA_UPLOAD_MAX_MEMORY = 52428800  # 50MB 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 100_000 # 100k fields
+
+CONN_MAX_AGE = 0 # Close the connection after each request
