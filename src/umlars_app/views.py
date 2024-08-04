@@ -190,7 +190,6 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         uml_model_to_update = UmlModel.objects.prefetch_related("source_files").get(id=pk)
         if request.method == "POST":
-            
             form = AddUmlModelForm(request.POST, instance=uml_model_to_update)
             formset = EditUmlFileFormset(request.POST, request.FILES, prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
 
@@ -199,23 +198,43 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                     added_uml_model = form.save()
                     formset.instance = added_uml_model
                     if formset.is_valid():
-                        added_uml_files = formset.save()
-                        logger.info(f"UML files: {added_uml_files} have been added.")
-                        # TODO: add translate for each file
+                        # Get initial file IDs before editing
+                        source_files_ids_before_edit = set(uml_model_to_update.source_files.values_list("id", flat=True))
+
+                        # Save formset to update the files
+                        updated_uml_files = formset.save()
+
+                        
                         if formset.has_changed():
-                            schedule_translate_uml_model(request, added_uml_model)
-                        messages.success(request, f"UML model: {added_uml_model} has been added.")
-                        logger.info(f"UML model: {added_uml_model} has been added.")
+                            # Get updated file IDs from the database
+                            source_files_ids_after_edit = set(added_uml_model.source_files.values_list("id", flat=True))
+
+                            # Calculate the sets
+                            deleted_files_ids = source_files_ids_before_edit - source_files_ids_after_edit
+                            new_or_edited_files_ids = set(file.id for file in updated_uml_files)
+                            updated_files_ids = new_or_edited_files_ids & source_files_ids_before_edit
+                            new_submitted_files_ids = new_or_edited_files_ids - source_files_ids_before_edit
+
+                            logger.info(f"IDs of the source files before editing: {source_files_ids_before_edit}.")
+                            logger.info(f"IDs of the source files after editing: {source_files_ids_after_edit}.")
+                            logger.info(f"IDs of the new or edited files: {new_or_edited_files_ids}.")
+                            logger.info(f"IDs of the newly submitted files: {new_submitted_files_ids}.")
+                            logger.info(f"IDs of the updated files: {updated_files_ids}.")
+                            logger.info(f"IDs of the deleted files: {deleted_files_ids}.")
+
+                            schedule_translate_uml_model(request, added_uml_model, source_files_ids_after_edit, updated_files_ids, new_submitted_files_ids, deleted_files_ids)
+
+                        logger.info(f"UML model: {added_uml_model} has been updated.")
                         return redirect("home")
                     else:
-                        logger.error(f"UML files: {formset.errors} could not be added.")
-                        messages.error(request, "UML files could not be added.")
+                        logger.error(f"UML files: {formset.errors} could not be updated.")
+                        messages.error(request, "UML files could not be updated.")
                         return render(request, "update-uml-model.html", {"form": form, "formset": formset})
             else:
-                logger.error(f"UML model: {form.errors} could not be added.")
-                messages.error(request, "UML model could not be added.")
+                logger.error(f"UML model: {form.errors} could not be updated.")
+                messages.error(request, "UML model could not be updated.")
                 return render(request, "update-uml-model.html", {"form": form, "formset": formset})
-            
+
         else:
             form = AddUmlModelForm(instance=uml_model_to_update)
             formset = EditUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)

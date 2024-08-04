@@ -1,5 +1,6 @@
+from typing import List
+
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from umlars_app.models import UmlModel, UmlModelMetadata, UmlFile
 
 
@@ -33,6 +34,32 @@ class UmlModelFilesSerializer(serializers.ModelSerializer):
 
 
 class UmlModelTranslationQueueMessageSerializer(serializers.ModelSerializer):
+    ids_of_source_files = serializers.SerializerMethodField('_ids_of_source_files')
+    ids_of_edited_files = serializers.SerializerMethodField('_ids_of_edited_files')
+    ids_of_new_submitted_files = serializers.SerializerMethodField('_ids_of_new_submitted_files')
+    ids_of_deleted_files = serializers.SerializerMethodField('_ids_of_deleted_files')
+
+
+    def _ids_of_source_files(self, obj: UmlModel) -> List[int]:
+        ids_of_source_files = self.context.get("ids_of_source_files")
+        ids_of_source_files = list(ids_of_source_files) if ids_of_source_files is not None else []
+        return ids_of_source_files
+
+    def _ids_of_edited_files(self, obj: UmlModel) -> List[int]:
+        ids_of_edited_files = self.context.get("ids_of_edited_files")
+        ids_of_edited_files = list(ids_of_edited_files) if ids_of_edited_files is not None else []
+        return ids_of_edited_files
+
+    def _ids_of_new_submitted_files(self, obj: UmlModel) -> List[int]:
+        ids_of_new_submitted_files = self.context.get("ids_of_new_submitted_files")
+        ids_of_new_submitted_files = list(ids_of_new_submitted_files) if ids_of_new_submitted_files is not None else []
+        return ids_of_new_submitted_files
+
+    def _ids_of_deleted_files(self, obj: UmlModel) -> List[int]:
+        ids_of_deleted_files = self.context.get("ids_of_deleted_files")
+        ids_of_deleted_files = list(ids_of_deleted_files) if ids_of_deleted_files is not None else []
+        return ids_of_deleted_files
+
     class Meta:
         model = UmlModel
-        fields = ["id"]
+        fields = ["id", "ids_of_source_files", "ids_of_edited_files", "ids_of_new_submitted_files", "ids_of_deleted_files"]

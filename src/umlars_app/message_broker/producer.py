@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Optional, Iterator
 
 import pika
 from contextlib import contextmanager
@@ -69,8 +69,15 @@ class MessageBrokerProducer:
                 raise ValueError(f"Error while sending message: {ex}") from ex
 
 
-def create_message_data(model: UmlModel) -> dict:
-    return UmlModelTranslationQueueMessageSerializer(model).data
+def create_message_data(model: UmlModel, ids_of_source_files: Optional[Iterator[int]] = None, ids_of_edited_files: Optional[Iterator[int]] = None, ids_of_new_submitted_files: Optional[Iterator[int]] = None, ids_of_deleted_files: Optional[Iterator[int]] = None) -> dict:
+    serializer = UmlModelTranslationQueueMessageSerializer(model, context={
+        'ids_of_source_files': ids_of_source_files,
+        'ids_of_edited_files': ids_of_edited_files,
+        'ids_of_new_submitted_files': ids_of_new_submitted_files,
+        'ids_of_deleted_files': ids_of_deleted_files
+    })
+
+    return serializer.data
 
 
 def send_uploaded_model_message(message_data: dict, producer: Optional[MessageBrokerProducer] = None, queue_name: str = settings.MESSAGE_BROKER_QUEUE_NAME) -> None:
