@@ -1,4 +1,4 @@
-from typing import Deque, Set
+from typing import Deque, Set, Iterator, Tuple
 from collections import deque
 
 from django.shortcuts import render, redirect
@@ -11,7 +11,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
 from umlars_app.models import UmlModel, UmlFile
-from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, increase_forms_count_in_formset, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
+from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.utils.grouping_utils import group_files, determine_model_name
 from umlars_app.exceptions import UnsupportedFileError
@@ -162,7 +162,9 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                         added_uml_files = formset.save()
                         logger.info(f"UML files: {added_uml_files} have been added.")
                         
-                        schedule_translate_uml_model(request, added_uml_model)
+                        source_files_ids = set(added_uml_model.source_files.values_list("id", flat=True))
+
+                        schedule_translate_uml_model(request, added_uml_model, source_files_ids, ids_of_new_submitted_files=source_files_ids)
                         # TODO: add translate for each file
                         messages.success(request, f"UML model: {added_uml_model} has been added.")
                         logger.info(f"UML model: {added_uml_model} has been added.")
@@ -183,6 +185,13 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
 
     return redirect("home")
 
+
+def _calculate_files_changes(source_files_ids_before_edit: Set[int], source_files_ids_after_edit: Set[int], updated_uml_files: Iterator[UmlFile]) -> Tuple[Set[int], Set[int], Set[int]]:
+    deleted_files_ids = source_files_ids_before_edit - source_files_ids_after_edit
+    new_submitted_files_ids = source_files_ids_after_edit - source_files_ids_before_edit
+    new_or_edited_files_ids = set(file.id for file in updated_uml_files)
+    updated_files_ids = new_or_edited_files_ids & source_files_ids_before_edit
+    return deleted_files_ids, updated_files_ids, new_submitted_files_ids
 
 
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
@@ -209,19 +218,7 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                             # Get updated file IDs from the database
                             source_files_ids_after_edit = set(added_uml_model.source_files.values_list("id", flat=True))
 
-                            # Calculate the sets
-                            deleted_files_ids = source_files_ids_before_edit - source_files_ids_after_edit
-                            new_or_edited_files_ids = set(file.id for file in updated_uml_files)
-                            updated_files_ids = new_or_edited_files_ids & source_files_ids_before_edit
-                            new_submitted_files_ids = new_or_edited_files_ids - source_files_ids_before_edit
-
-                            logger.info(f"IDs of the source files before editing: {source_files_ids_before_edit}.")
-                            logger.info(f"IDs of the source files after editing: {source_files_ids_after_edit}.")
-                            logger.info(f"IDs of the new or edited files: {new_or_edited_files_ids}.")
-                            logger.info(f"IDs of the newly submitted files: {new_submitted_files_ids}.")
-                            logger.info(f"IDs of the updated files: {updated_files_ids}.")
-                            logger.info(f"IDs of the deleted files: {deleted_files_ids}.")
-
+                            deleted_files_ids, updated_files_ids, new_submitted_files_ids = _calculate_files_changes(source_files_ids_before_edit, source_files_ids_after_edit, updated_uml_files)
                             schedule_translate_uml_model(request, added_uml_model, source_files_ids_after_edit, updated_files_ids, new_submitted_files_ids, deleted_files_ids)
 
                         logger.info(f"UML model: {added_uml_model} has been updated.")
@@ -351,18 +348,10 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
         model = uml_models.pop()
         model_files = uml_files_for_models.pop()
         logger.info(f"Model files: {model_files}")
-        # add_form_to_formset(model_formset, model_to_dict(model))
         models_initial_data.append(model_to_dict(model))
 
         file_formset_initial_data = list(map(model_to_dict, list(model_files)))
         logger.info(f"file_formset_initial_data: {file_formset_initial_data}")
-
-        # AddUmlFileFormsetWithExtraOverriden = forms.inlineformset_factory(UmlModel, UmlFile, form=AddUmlFileForm, formset=AddUmlFileFormset, extra=len(file_formset_initial_data), can_delete=True, can_delete_extra=True, fields=("data", "format", "file", 'filename'))
-
-        # class AddUmlFileFormsetWithExtraOverriden(AddUmlFileFormset):
-        #     ...
-        
-        # AddUmlFileFormsetWithExtraOverriden.extra = len(file_formset_initial_data)
 
         file_formset = AddUmlFileFormset(instance=model, prefix=f'source_files_{i}', initial=file_formset_initial_data)
         file_formset.extra = len(file_formset_initial_data)
@@ -371,8 +360,6 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
         file_formsets.append(file_formset)
     
     model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data)
-    # increase_forms_count_in_formset(model_formset, len(models_initial_data))
-
 
     return render(request, 'review-bulk-upload.html', {
         'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
@@ -384,13 +371,24 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
 
 def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_files_for_models: deque[deque[UmlFile]]) -> HttpResponse:
     for model, model_files in zip(uml_models, uml_files_for_models):
+        try:
+            # object may not yet been saved to the database
+            source_files_ids_before_edit = set(model.source_files.values_list("id", flat=True))        
+        except ValueError as ex:
+            logger.warning(f"Model {model} has not been saved to the database yet: {ex}")
+            source_files_ids_before_edit = set()
+            
         with transaction.atomic():
             model.save()
             for model_file in model_files:
                 model_file.model = model
                 model_file.save() 
-            
-        schedule_translate_uml_model(request, model)
+        
+
+        source_files_ids_after_edit = set(model.source_files.values_list("id", flat=True))        
+        deleted_files_ids, updated_files_ids, new_submitted_files_ids = _calculate_files_changes(source_files_ids_before_edit, source_files_ids_after_edit, model_files)
+        schedule_translate_uml_model(request, model, source_files_ids_after_edit, updated_files_ids, new_submitted_files_ids, deleted_files_ids)
+
 
     messages.success(request, "Files uploaded successfully.")
     return redirect('home')
@@ -401,7 +399,8 @@ async def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if (await request.auser()).is_authenticated:
         try:
             model = UmlModel.objects.get(id=pk)
-            await schedule_translate_uml_model(request, model)
+            source_files_ids = set(model.source_files.values_list("id", flat=True))        
+            await schedule_translate_uml_model(request, model, source_files_ids)
             messages.success(request, f"Model {model.name} has been sent for translation.")
             return redirect("home")
         except UmlModel.DoesNotExist:
@@ -432,7 +431,10 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                         file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=saved_model)
                         if file_formset.is_valid():
                             file_formset.save()
-                            schedule_translate_uml_model(request, saved_model)
+                            
+                            source_files_ids = set(saved_model.source_files.values_list("id", flat=True))        
+                            schedule_translate_uml_model(request, saved_model, source_files_ids, ids_of_new_submitted_files=source_files_ids)
+
                         else:
                             messages.warning(request, f"Files for model: {saved_model.name} could not be uploaded. Errors: {file_formset.errors}")
                     
