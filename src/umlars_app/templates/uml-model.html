@@ -25,10 +25,22 @@
         <div class="col-md-4">
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h4 class="card-title mb-0">Metadata Statistics</h4>
+                    <h4 class="card-title mb-0">Metadata</h4>
                 </div>
                 <div class="card-body">
-                    {% render_json uml_model.metadata.data %}
+                    <ul class="list-group
+                        list-group-flush">
+                        <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Created:</strong>
+                            <span>{{ uml_model.tech_valid_from }}</span>
+                        </li>
+                        <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Shared with:</strong>
+                            <span>{{ uml_model.accessed_by }}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
             <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary">Back</a>

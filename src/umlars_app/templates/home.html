@@ -13,7 +13,6 @@
                         <th scope="col">Description</th>
                         <th scope="col">Source file path</th>
                         <th scope="col">Update Date</th>
-                        <th scope="col">Metadata</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -33,7 +32,6 @@
                                 {% endif %}
                             </td>
                             <td>{{ uml_model.tech_valid_from }}</td>
-                            <td>{% render_json uml_model.metadata.data %}</td>
                             <td>
                                 <div class="btn-group text-center" role="group">
                                     <a href="{% url 'uml-model' uml_model.id %}" class="btn btn-secondary">View</a>

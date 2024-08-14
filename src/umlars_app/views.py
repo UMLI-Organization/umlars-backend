@@ -27,9 +27,9 @@ def home(request: HttpRequest) -> HttpResponse:
     else:
         searched_model_name = request.GET.get('model_name')
         if searched_model_name is not None:
-            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").filter(name__icontains=searched_model_name).order_by("id")
+            uml_models = UmlModel.objects.prefetch_related("source_files").filter(name__icontains=searched_model_name).order_by("id")
         else:
-            uml_models = UmlModel.objects.prefetch_related("metadata", "source_files").all().order_by("id")
+            uml_models = UmlModel.objects.prefetch_related("source_files").all().order_by("id")
 
         # Pagination
         paginator = Paginator(uml_models, 10)  # Show 10 models per page
@@ -115,7 +115,7 @@ def profile(request):
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model = UmlModel.objects.prefetch_related("metadata", "source_files").get(id=pk)
+        uml_model = UmlModel.objects.prefetch_related("source_files").get(id=pk)
 
         # Read and decode the file content
         # TODO: redo after final file format decision
@@ -151,7 +151,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
     SOURCE_FILES_FORMSET_PREFIX = "source_files"
     if request.user.is_authenticated:
         if request.method == "POST":
-            form = AddUmlModelForm(request.POST)
+            form = AddUmlModelForm(request.POST, user=request.user)
             formset = AddUmlFileFormset(request.POST, request.FILES, prefix=SOURCE_FILES_FORMSET_PREFIX)
 
             if form.is_valid():
@@ -179,7 +179,7 @@ def add_uml_model(request: HttpRequest) -> HttpResponse:
                 return render(request, "add-uml-model.html", {"form": form, "formset": formset})
             
         else:
-            form = AddUmlModelForm()
+            form = AddUmlModelForm(user=request.user)
             formset = AddUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX)
             return render(request, "add-uml-model.html", {"form": form, "formset": formset})
 
@@ -359,7 +359,7 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
         logger.info(f"file_formset.initial: {file_formset.initial}")
         file_formsets.append(file_formset)
     
-    model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data)
+    model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, initial=models_initial_data, form_kwargs={"user": request.user})
 
     return render(request, 'review-bulk-upload.html', {
         'model_forms_with_file_formsets': zip(model_formset.forms, file_formsets),
@@ -380,6 +380,7 @@ def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_
             
         with transaction.atomic():
             model.save()
+            model.accessed_by.add(request.user)
             for model_file in model_files:
                 model_file.model = model
                 model_file.save() 
@@ -415,7 +416,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         if request.method == "POST":
             logger.info(f"POST request received: {request.POST}")
-            model_formset = AddUmlModelFormset(request.POST, prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            model_formset = AddUmlModelFormset(request.POST, prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, form_kwargs={"user": request.user})
             logger.info(f"Processing model forms {list(map(lambda form: form.data, model_formset))}")
             if model_formset.is_valid():
                 # This is based on supposition that the order of models in the formset is the same as the order of file groups
@@ -428,6 +429,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
 
                     with transaction.atomic():
                         saved_model = model_form.save()
+                        saved_model.accessed_by.add(request.user)
                         file_formset = EditUmlFileFormset(request.POST, request.FILES, prefix=f'source_files_{i}', instance=saved_model)
                         if file_formset.is_valid():
                             file_formset.save()
@@ -451,7 +453,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
         else:
             logger.warning(request, "Only POST supported.")
             messages.warning(request, "Only POST requests supported.")
-            model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX)
+            model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, form_kwargs={"user": request.user})
             return render(request, 'review-bulk-upload.html', {
                 'model_formset': model_formset,
                 'empty_file_form': AddUmlFileFormset().empty_form,

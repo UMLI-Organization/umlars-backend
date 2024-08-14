@@ -17,7 +17,7 @@ from django.http import QueryDict
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.datastructures import MultiValueDict
 
-from umlars_app.models import UmlModel, UmlFile
+from umlars_app.models import UmlModel, UmlFile, UserAccessToModel
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.exceptions import UnsupportedFileError
 from umlars_app.utils.logging import get_new_sublogger
@@ -173,7 +173,8 @@ class ChangePasswordForm(PasswordChangeForm):
 class AddUmlModelForm(forms.ModelForm):
     class Meta:
         model = UmlModel
-        fields = ("name", "description",)
+        fields = ("name", "description", "accessed_by")
+
 
     name = forms.CharField(
         label="Model Name",
@@ -189,7 +190,20 @@ class AddUmlModelForm(forms.ModelForm):
         ),
         required=False,
     )
-    
+
+    accessed_by = forms.ModelMultipleChoiceField(
+        label="",
+        queryset=UserAccessToModel.objects.all(),
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input d-none"}),
+        required=False,
+    )
+
+    def __init__(self, *args, user: User | None = None, **kwargs):
+        super(AddUmlModelForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['accessed_by'].initial = [user]
+
+
     
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True

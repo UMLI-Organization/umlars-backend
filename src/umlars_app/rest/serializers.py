@@ -1,20 +1,13 @@
 from typing import List
 
 from rest_framework import serializers
-from umlars_app.models import UmlModel, UmlModelMetadata, UmlFile
+from umlars_app.models import UmlModel, UmlFile
 
 
 class UmlModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = UmlModel
-        fields = ["name", "description", "source_files", "formatted_data", "id"]
-        read_only_fields = ["tech_valid_from", "tech_valid_to", "tech_active_flag",]
-
-
-class UmlModelMetadataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UmlModelMetadata
-        fields = ['data', 'model', 'id']
+        fields = ["name", "description", "source_files", "formatted_data", "accessed_by", "id"]
         read_only_fields = ["tech_valid_from", "tech_valid_to", "tech_active_flag",]
 
 

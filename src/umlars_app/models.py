@@ -3,6 +3,21 @@ from enum import Enum
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
+
+
+class ObjectAccessLevel(models.IntegerChoices):
+    """Enum representing the access level to an object."""
+    READ = 10
+    WRITE = 20
+
+
+class ProcessStatus(models.IntegerChoices):
+    """Enum representing the status of a process."""
+    QUEUED = 10
+    RUNNING = 20
+    FINISHED = 30
+    FAILED = 40
 
 
 class SCD2Model(models.Model):
@@ -28,6 +43,9 @@ class UmlModel(SCD2Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     formatted_data = models.TextField(blank=True, null=True)
+    accessed_by = models.ManyToManyField(
+        User, through="UserAccessToModel", related_name="models"
+    )
 
     def __str__(self):
         return f"{self.name}"
@@ -53,6 +71,9 @@ class UmlFile(models.Model):
     format = models.CharField(
         max_length=50, choices=SupportedFormat.choices, default=None
     )
+    state = models.IntegerField(
+        choices=ProcessStatus.choices, default=ProcessStatus.QUEUED
+    )
 
     model = models.ForeignKey(
         UmlModel, on_delete=models.CASCADE, related_name="source_files",
@@ -64,27 +85,12 @@ class UmlFile(models.Model):
         return f"File: {self.filename} for model {self.model.name} in format {self.format}"
     
 
-class UmlModelMetadata(SCD2Model):
-    """Metadata for UML models, connected via a OneToOne relationship."""
-
-    class TranslationState(models.TextChoices):
-        """Enum for translation state."""
-        QUEUED = "queued", _("Queued")
-        IN_PROGRESS = "in_progress", _("In progress")
-        FINISHED = "finished", _("Finished")
-        FAILED = "failed", _("Failed")
-
-
-
-    model = models.OneToOneField(
-        UmlModel, on_delete=models.CASCADE, related_name="metadata"
+class UserAccessToModel(models.Model):
+    """Model representing a user's access to a UML model."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    model = models.ForeignKey(UmlModel, on_delete=models.CASCADE)
+    access_level = models.IntegerField(
+        choices=ObjectAccessLevel.choices, default=ObjectAccessLevel.WRITE
     )
-    data = models.JSONField(default=dict)
-    translation_state = models.CharField(
-        max_length=50,
-        choices=TranslationState.choices,
-        default=TranslationState.QUEUED,
-    )
-
-    def __str__(self) -> str:
-        return f"{self.model.name} - metadata in stat {self.translation_state}"
+    def __str__(self):
+        return f"User {self.user} has access to model {self.model}"
