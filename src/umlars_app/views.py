@@ -11,7 +11,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
 from umlars_app.models import UmlModel, UmlFile
-from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
+from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm,UpdateUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.utils.grouping_utils import group_files, determine_model_name
 from umlars_app.exceptions import UnsupportedFileError
@@ -27,9 +27,9 @@ def home(request: HttpRequest) -> HttpResponse:
     else:
         searched_model_name = request.GET.get('model_name')
         if searched_model_name is not None:
-            uml_models = UmlModel.objects.prefetch_related("source_files").filter(name__icontains=searched_model_name).order_by("id")
+            uml_models = UmlModel.objects.prefetch_related("source_files").filter(name__icontains=searched_model_name, accessed_by__id=request.user.id).order_by("id")
         else:
-            uml_models = UmlModel.objects.prefetch_related("source_files").all().order_by("id")
+            uml_models = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).all().order_by("id")
 
         # Pagination
         paginator = Paginator(uml_models, 10)  # Show 10 models per page
@@ -115,7 +115,7 @@ def profile(request):
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model = UmlModel.objects.prefetch_related("source_files").get(id=pk)
+        uml_model = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
 
         # Read and decode the file content
         # TODO: redo after final file format decision
@@ -134,7 +134,7 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 def delete_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         try:
-            uml_model_to_delete = UmlModel.objects.get(id=pk)
+            uml_model_to_delete = UmlModel.objects.filter(accessed_by__id=request.user.id).get(id=pk)
         except UmlModel.DoesNotExist:
             messages.warning(request, "UML model already does not exist")
             return redirect("home")
@@ -197,9 +197,9 @@ def _calculate_files_changes(source_files_ids_before_edit: Set[int], source_file
 def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     SOURCE_FILES_FORMSET_PREFIX = "source_files"
     if request.user.is_authenticated:
-        uml_model_to_update = UmlModel.objects.prefetch_related("source_files").get(id=pk)
+        uml_model_to_update = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
         if request.method == "POST":
-            form = AddUmlModelForm(request.POST, instance=uml_model_to_update)
+            form = UpdateUmlModelForm(request.POST, instance=uml_model_to_update)
             formset = EditUmlFileFormset(request.POST, request.FILES, prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
 
             if form.is_valid():
@@ -233,7 +233,7 @@ def update_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
                 return render(request, "update-uml-model.html", {"form": form, "formset": formset})
 
         else:
-            form = AddUmlModelForm(instance=uml_model_to_update)
+            form = UpdateUmlModelForm(instance=uml_model_to_update)
             formset = EditUmlFileFormset(prefix=SOURCE_FILES_FORMSET_PREFIX, instance=uml_model_to_update)
             return render(request, "update-uml-model.html", {"form": form, "formset": formset})
 

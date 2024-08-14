@@ -17,7 +17,7 @@ from django.http import QueryDict
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.datastructures import MultiValueDict
 
-from umlars_app.models import UmlModel, UmlFile, UserAccessToModel
+from umlars_app.models import UmlModel, UmlFile, UserAccessToModel, ObjectAccessLevel
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.exceptions import UnsupportedFileError
 from umlars_app.utils.logging import get_new_sublogger
@@ -170,7 +170,7 @@ class ChangePasswordForm(PasswordChangeForm):
     )
 
 
-class AddUmlModelForm(forms.ModelForm):
+class _AddUmlModelForm(forms.ModelForm):
     class Meta:
         model = UmlModel
         fields = ("name", "description", "accessed_by")
@@ -198,10 +198,24 @@ class AddUmlModelForm(forms.ModelForm):
         required=False,
     )
 
+
+class AddUmlModelForm(_AddUmlModelForm):
     def __init__(self, *args, user: User | None = None, **kwargs):
         super(AddUmlModelForm, self).__init__(*args, **kwargs)
         if user:
             self.fields['accessed_by'].initial = [user]
+
+    def clean(self) -> Dict[str, Any]:
+        cleaned_data =  super(AddUmlModelForm, self).clean()
+        cleaned_data['accessed_by'] = self.fields['accessed_by'].initial
+        return cleaned_data
+    
+
+class UpdateUmlModelForm(_AddUmlModelForm):
+    def clean(self) -> Dict[str, Any]:
+        cleaned_data =  super(UpdateUmlModelForm, self).clean()
+        cleaned_data['accessed_by'] = self.instance.accessed_by.all()
+        return cleaned_data
 
 
     

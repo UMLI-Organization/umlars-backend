@@ -15,6 +15,8 @@ class UmlModelViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated & (IsAdminUser|IsOwner)]
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return UmlModel.objects.all()
         return UmlModel.objects.filter(accessed_by__id=self.request.user.id)
     
     def perform_create(self, serializer):
@@ -29,6 +31,8 @@ class UmlFileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated & (IsAdminUser|IsFileOwner)]
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return UmlModel.objects.all()
         return UmlFile.objects.filter(model__accessed_by__id=self.request.user.id)
     
     def perform_create(self, serializer):
@@ -43,6 +47,8 @@ class UmlModelFilesViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated & (IsAdminUser|IsOwner)]
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return UmlModel.objects.all()
         return UmlModel.objects.filter(accessed_by__id=self.request.user.id)
     
     def perform_create(self, serializer):
