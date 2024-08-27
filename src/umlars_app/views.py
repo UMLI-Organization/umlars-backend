@@ -424,13 +424,12 @@ def _try_save_uml_models(request: HttpRequest, uml_models: deque[UmlModel], uml_
     return redirect('home')
 
 
-# TODO: add button to translate manually
-async def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
-    if (await request.auser()).is_authenticated:
+def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.user.is_authenticated:
         try:
             model = UmlModel.objects.get(id=pk)
             source_files_ids = set(model.source_files.values_list("id", flat=True))        
-            await schedule_translate_uml_model(request, model, source_files_ids)
+            schedule_translate_uml_model(request, model, source_files_ids)
             messages.success(request, f"Model {model.name} has been sent for translation.")
             return redirect("home")
         except UmlModel.DoesNotExist:

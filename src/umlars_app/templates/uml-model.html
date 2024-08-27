@@ -60,7 +60,7 @@
                                         {% render_status file.state status_enum %}
                                     </span>
                                     <span>
-                                        File {{ file.filename }} in format {{ file.format }}
+                                        {{ file.filename }}
                                     </span>
                                 </li>
                                 {% endfor %}
@@ -70,6 +70,7 @@
                     </ul>
                 </div>
             </div>
+            <a href="{% url 'translate-uml-model' uml_model.id %}" class="btn btn-primary">Translate</a>
             <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary">Back</a>
             <a href="{% url 'update-uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
             <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>

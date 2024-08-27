@@ -11,7 +11,7 @@
                         <th scope="col">ID</th>
                         <th scope="col">Name</th>
                         <th scope="col">Description</th>
-                        <th scope="col">Source file path</th>
+                        <th scope="col">Source files</th>
                         <th scope="col">Update Date</th>
                         <th scope="col">Actions</th>
                     </tr>
@@ -25,7 +25,9 @@
                             <td>
                                 {% if uml_model.source_files %}
                                     {% for source_file in uml_model.source_files.all %}
-                                        <a href="{{ source_file.filename }}" class="link-dark">{{ source_file.filename }}</a>
+                                        <span>    
+                                            {{ source_file.filename }}, 
+                                        </span>
                                     {% endfor %}
                                 {% else %}
                                     No file provided

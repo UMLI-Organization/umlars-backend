@@ -15,6 +15,7 @@ urlpatterns = [
     path("profile/change-password/", views.change_password, name="profile/change-password"),
     path("uml-model/<int:pk>", views.uml_model, name="uml-model"),
     path("delete-uml-model/<int:pk>", views.delete_uml_model, name="delete-uml-model"),
+    path("translate-uml-model/<int:pk>", views.translate_uml_model, name="translate-uml-model"),
     path("update-uml-model/<int:pk>", views.update_uml_model, name="update-uml-model"),
     path("add-uml-model/", views.add_uml_model, name="add-uml-model"),
     path("bulk-upload-uml-models/", views.bulk_upload_uml_models, name="bulk-upload-uml-models"),
