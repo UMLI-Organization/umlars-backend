@@ -60,10 +60,10 @@ class UmlFile(models.Model):
     
     class SupportedFormat(models.TextChoices):
         UNKNOWN = "unknown", _("Unknown")
-        EA_XMI = "ea_xmi", _("Enterprise Architect XMI")
-        PAPYRUS_XMI = "papyrus_uml", _("Papyrus UML")
-        STARUML_MDJ = "staruml_xmi", _("StarUML XMI")
-        GENMYMODEL_XMI = "genmymodel", _("GenMyModel")
+        EA_XMI = "xmi_ea", _("Enterprise Architect XMI")
+        PAPYRUS_UML = "uml_papyrus", _("Papyrus UML")
+        PAPYRUS_NOTATION = "notation_papyrus", _("Papyrus Notation")
+        STARUML_MDJ = "mdj_staruml", _("StarUML XMI")
 
 
     data = models.TextField()
