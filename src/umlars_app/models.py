@@ -17,7 +17,8 @@ class ProcessStatus(models.IntegerChoices):
     QUEUED = 10
     RUNNING = 20
     FINISHED = 30
-    FAILED = 40
+    PARTIAL_SUCCESS = 40
+    FAILED = 50
 
 
 class SCD2Model(models.Model):

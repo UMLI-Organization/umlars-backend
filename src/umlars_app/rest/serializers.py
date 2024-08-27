@@ -14,7 +14,7 @@ class UmlModelSerializer(serializers.ModelSerializer):
 class UmlFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UmlFile
-        fields = ['id', 'data', 'format', 'filename']
+        fields = ['id', 'data', 'format', 'filename', 'state']
         read_only_fields = ["tech_valid_from", "tech_valid_to", "tech_active_flag",]
 
 

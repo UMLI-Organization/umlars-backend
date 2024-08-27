@@ -32,7 +32,7 @@ class UmlFileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return UmlModel.objects.all()
+            return UmlFile.objects.all()
         return UmlFile.objects.filter(model__accessed_by__id=self.request.user.id)
     
     def perform_create(self, serializer):
@@ -48,8 +48,8 @@ class UmlModelFilesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return UmlModel.objects.all()
-        return UmlModel.objects.filter(accessed_by__id=self.request.user.id)
+            return UmlModel.objects.all().prefetch_related('source_files')
+        return UmlModel.objects.filter(accessed_by__id=self.request.user.id).prefetch_related('source_files')
     
     def perform_create(self, serializer):
         super().perform_create(serializer)

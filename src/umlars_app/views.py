@@ -10,7 +10,7 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
-from umlars_app.models import UmlModel, UmlFile
+from umlars_app.models import UmlModel, UmlFile, ProcessStatus
 from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm,UpdateUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.utils.grouping_utils import group_files, determine_model_name
@@ -119,12 +119,41 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
 
         # Read and decode the file content
         # TODO: redo after final file format decision
-        pretty_xml = uml_model.formatted_data
+        # pretty_xml = uml_model.formatted_data
+
+
+        model_status: ProcessStatus = ProcessStatus.PARTIAL_SUCCESS
+        all_failed = True
+        for file in uml_model.source_files.all():
+
+            match file.state:
+                case ProcessStatus.QUEUED:
+                    model_status = ProcessStatus.QUEUED
+                    all_failed = False
+                    break
+
+                case ProcessStatus.RUNNING:
+                    model_status = ProcessStatus.RUNNING
+                    all_failed = False
+                    break
+
+                case ProcessStatus.FINISHED:
+                    model_status = ProcessStatus.FINISHED
+                    all_failed = False
+                
+                case ProcessStatus.PARTIAL_SUCCESS:
+                    all_failed = False
+
+            if all_failed:
+                model_status = ProcessStatus.FAILED
 
         return render(
             request,
             "uml-model.html",
-            {"uml_model": uml_model, "pretty_xml": pretty_xml},
+            {"uml_model": uml_model,
+             "model_status": model_status,
+             "status_enum": ProcessStatus,
+             },
         )
     else:
         messages.warning(request, "You need to be logged in to view this page")

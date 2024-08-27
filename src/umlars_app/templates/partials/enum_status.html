@@ -1,0 +1,15 @@
+{% if enum_object == enum_class.QUEUED %}
+<span class="badge bg-warning text-dark {{additional_classes_string}}">
+{% elif enum_object == enum_class.RUNNING %}
+<span class="badge bg-primary {{additional_classes_string}}">
+{% elif enum_object == enum_class.FINISHED %}
+<span class="badge bg-success {{additional_classes_string}}">
+{% elif enum_object == enum_class.FAILED %}
+<span class="badge bg-danger {{additional_classes_string}}">
+{% elif enum_object == enum_class.PARTIAL_SUCCESS %}
+<span class="badge bg-info {{additional_classes_string}}">
+{% else %}
+<span class="badge bg-secondary {{additional_classes_string}}">
+{% endif %}
+{{ status_text }}
+</span>
