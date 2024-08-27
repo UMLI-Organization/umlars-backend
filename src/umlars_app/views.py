@@ -429,9 +429,9 @@ def translate_uml_model(request: HttpRequest, pk: int) -> HttpResponse:
         try:
             model = UmlModel.objects.get(id=pk)
             source_files_ids = set(model.source_files.values_list("id", flat=True))        
-            schedule_translate_uml_model(request, model, source_files_ids)
+            schedule_translate_uml_model(request, model, source_files_ids, reset_files_status=True)
             messages.success(request, f"Model {model.name} has been sent for translation.")
-            return redirect("home")
+            return redirect(request.META.get('HTTP_REFERER', '/'))
         except UmlModel.DoesNotExist:
             messages.warning(request, f"Model with id {pk} does not exist.")
             return redirect("home")

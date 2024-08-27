@@ -25,9 +25,11 @@
                             <td>
                                 {% if uml_model.source_files %}
                                     {% for source_file in uml_model.source_files.all %}
-                                        <span>    
-                                            {{ source_file.filename }}, 
-                                        </span>
+                                    <ul>
+                                        <li>    
+                                            {{ source_file }}
+                                        </li>
+                                    </ul>
                                     {% endfor %}
                                 {% else %}
                                     No file provided
