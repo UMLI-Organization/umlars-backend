@@ -65,7 +65,6 @@ class UmlFile(models.Model):
         PAPYRUS_NOTATION = "notation_papyrus", _("Papyrus Notation")
         STARUML_MDJ = "mdj_staruml", _("StarUML XMI")
 
-
     data = models.TextField()
     filename = models.CharField(max_length=200, default=None, blank=True, null=True)
     

@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from umlars_app import settings
 from umlars_app.exceptions import QueueUnavailableError
 from umlars_app.utils.logging import get_new_sublogger
-from umlars_app.rest.serializers import UmlModelTranslationQueueMessageSerializer
+from umlars_app.rest.serializers import UmlFilesTranslationQueueMessageSerializer
 from umlars_app.models import UmlModel
 
 
@@ -50,7 +50,6 @@ class MessageBrokerProducer:
             if close_connection:
                 self._connection.close()
 
-
     def send_message(self, message_data: dict) -> None:
         with self.connect_channel(close_connection=True):
             try:
@@ -70,7 +69,7 @@ class MessageBrokerProducer:
 
 
 def create_message_data(model: UmlModel, ids_of_source_files: Optional[Iterator[int]] = None, ids_of_edited_files: Optional[Iterator[int]] = None, ids_of_new_submitted_files: Optional[Iterator[int]] = None, ids_of_deleted_files: Optional[Iterator[int]] = None) -> dict:
-    serializer = UmlModelTranslationQueueMessageSerializer(model, context={
+    serializer = UmlFilesTranslationQueueMessageSerializer(model, context={
         'ids_of_source_files': ids_of_source_files,
         'ids_of_edited_files': ids_of_edited_files,
         'ids_of_new_submitted_files': ids_of_new_submitted_files,
@@ -80,7 +79,7 @@ def create_message_data(model: UmlModel, ids_of_source_files: Optional[Iterator[
     return serializer.data
 
 
-def send_uploaded_model_message(message_data: dict, producer: Optional[MessageBrokerProducer] = None, queue_name: str = settings.MESSAGE_BROKER_QUEUE_NAME) -> None:
+def send_uploaded_model_message(message_data: dict, producer: Optional[MessageBrokerProducer] = None, queue_name: str = settings.MESSAGE_BROKER_QUEUE_UPLOADED_FILES_NAME) -> None:
     try:
         if producer is None:
             producer = MessageBrokerProducer(queue_name=queue_name, rabbitmq_host=settings.MESSAGE_BROKER_HOST)

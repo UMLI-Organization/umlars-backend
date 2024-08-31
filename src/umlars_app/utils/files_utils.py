@@ -7,7 +7,7 @@ from umlars_app.utils.logging import get_new_sublogger
 logger = get_new_sublogger(__name__)
 
 
-def decode_file(file: InMemoryUploadedFile, encoding: str = None) -> str:
+def decode_file(file: InMemoryUploadedFile, encoding: str = 'utf-8') -> str:
     try:
         logger.debug(f"Decoding file: {file} with encoding: {encoding} file_name {file.name} file_id {id(file)}")
         if file.closed:
@@ -15,11 +15,16 @@ def decode_file(file: InMemoryUploadedFile, encoding: str = None) -> str:
             file.open()
 
         read_file = file.read()
-        if not encoding:
-            # TODO: this is very expensive operation, consider using some heuristic to guess encoding
+
+        try:
+            decoded_data = read_file.decode(encoding)
+        except UnicodeDecodeError as ex:
+            logger.warning(f"Error decoding file: {file} with encoding: {encoding}.\nError: {ex}")
+            # If encoding is not provided, try to detect it
+            # This is expensive operation, so it is done only if the encoding is not provided
             encoding = detect(read_file)['encoding']
-    
-        decoded_data = read_file.decode(file.charset or encoding)
+            decoded_data = read_file.decode(encoding)
+
         return decoded_data
 
     except UnicodeDecodeError as ex:
