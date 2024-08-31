@@ -1,5 +1,6 @@
 from typing import Deque, Set, Iterator, Tuple
 from collections import deque
+import requests
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
@@ -107,20 +108,40 @@ def profile(request):
         else:
             form = EditUserForm(instance=request.user)
             return render(request, "profile.html", {"form": form})
-    
+
     else:
         messages.warning(request, "You need to be logged in to view this page")
         return redirect("home")
+
+
+def _get_translated_model(model_id: int) -> dict:
+    try:
+        translated_models_service_url = f"http://{umlars_app.settings.TRANSLATION_SERVICE_HOST}:{umlars_app.settings.TRANSLATION_SERVICE_PORT}/{umlars_app.settings.TRANSLATION_SERVICE_MODELS_ENDPOINT}/{model_id}"
+        response = requests.get(translated_models_service_url)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as ex:
+        logger.error(f"Failed to get translated model: {ex}")
+        raise ValueError(f"Failed to get translated model: {ex}") from ex
 
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         uml_model = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
 
-        # Read and decode the file content
-        # TODO: redo after final file format decision
-        # pretty_xml = uml_model.formatted_data
-
+        try:
+            translated_model = _get_translated_model(pk)
+            model_json = translated_model
+        except ValueError as ex:
+            model_json = None
+            warning_message = f"Model data is unavailable. \n{ex}"
+            messages.warning(request, warning_message)
+            logger.warning(warning_message)
+        except requests.exceptions.RequestException as ex:
+            model_json = None
+            warning_message = f"Model data is unavailable. \n{ex}"
+            messages.warning(request, warning_message)
+            logger.warning(warning_message)
 
         model_status: ProcessStatus = ProcessStatus.PARTIAL_SUCCESS
         all_failed = True
@@ -153,6 +174,7 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
             {"uml_model": uml_model,
              "model_status": model_status,
              "status_enum": ProcessStatus,
+             "model_json": model_json,
              },
         )
     else:
@@ -371,7 +393,6 @@ def _try_render_forms_for_models(request: HttpRequest, uml_models: deque[UmlMode
     models_initial_data = list()
 
     model_forms_ids_gen = range(len(uml_models))
-
 
     for i in model_forms_ids_gen:
         model = uml_models.pop()
