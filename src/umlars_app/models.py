@@ -74,6 +74,7 @@ class UmlFile(models.Model):
     state = models.IntegerField(
         choices=ProcessStatus.choices, default=ProcessStatus.QUEUED
     )
+    last_process_id = models.CharField(max_length=200, blank=True, null=True, default=None)
 
     model = models.ForeignKey(
         UmlModel, on_delete=models.CASCADE, related_name="source_files",

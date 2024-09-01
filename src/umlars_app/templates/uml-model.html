@@ -6,7 +6,6 @@
 
 
 {% block content %}
-
 <div class="container mt-4">
     <h1 class="mb-4">{{ uml_model.name }} UML Model</h1>
 
@@ -45,14 +44,29 @@
                             <strong>Status:</strong>
                             {% render_status model_status status_enum model_status.name 'fs-5' %}
                         </li>
-
-                        <li class="list-group
+                        <li class="list-group list-group-item d-flex flex-column">
+                            <strong>Shared with:</strong>
+                            {% for user in uml_model.accessed_by.all %}
+                                <div class="d-flex align-items-center justify-content-between mt-2">
+                                    <span>{{ user }}</span>
+                                    <a href="{% url 'unshare-model' uml_model.id user.id %}" class="btn btn-link p-0" style="color: red;">
+                                        <span class="glyphicon glyphicon-ban-circle" title="Remove access">[Unshare]</span>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </li>
+                        <!-- <li class="list-group
                             list-group-item d-flex justify-content-between align-items-center">
                             <strong>Shared with:</strong>
                             {% for user in uml_model.accessed_by.all %}
-                                <span>{{ user }}</span>
+                                <div>
+                                    <span class="mt-2"> {{ user }} </span>
+                                    <a href="{% url 'unshare-model' uml_model.id user.id %}" class="btn mt-0">
+                                        <span class="glyphicon glyphicon-ban-circle" style="color: red;" title="Remove access">[Unshare]</span>
+                                    </a>
+                                </span>
                             {% endfor %}
-                        </li>
+                        </li> -->
                         <li class="list-group
                             list-group-item d-flex justify-content-between align-items-center">
                             <strong>Files:</strong>
@@ -84,7 +98,12 @@
                 {% csrf_token %}
                 <select name="user" id="user-select" class="form-control me-2">
                     {% for user in form.fields.user.queryset %}
-                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        <option value="{{ user.id }}">
+                            {{ user.username }} 
+                            {% if user in uml_model.accessed_by.all %}
+                                (shared)
+                            {% endif %}
+                        </option>
                     {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-success">Share</button>

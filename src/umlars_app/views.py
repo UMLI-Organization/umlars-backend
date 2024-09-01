@@ -10,6 +10,7 @@ from django.db import transaction
 from django.forms.models import model_to_dict
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import User
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
 from umlars_app.models import UmlModel, UmlFile, ProcessStatus, UserAccessToModel, ObjectAccessLevel
@@ -128,9 +129,12 @@ def _get_translated_model(model_id: int) -> dict:
 
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
-        uml_model = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
+        try:
+            uml_model = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
+        except UmlModel.DoesNotExist:
+            messages.warning(request, "UML model does not exist or you do not have access to it.")
+            return redirect("home")
         form = ShareModelForm()
-        print(form.fields['user'].queryset) 
 
         try:
             translated_model = _get_translated_model(pk)
@@ -562,3 +566,23 @@ def share_model(request: HttpRequest, model_id: int) -> HttpResponse:
                 messages.success(request, f"Model successfully shared with {user.username}.")
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+def unshare_model(request: HttpRequest, model_id: int, user_id: int) -> HttpResponse:
+    if not request.user.is_authenticated:
+        messages.warning(request, "You need to be logged in to unshare a model.")
+        return redirect('home')
+    
+    uml_model = get_object_or_404(UmlModel, id=model_id)
+
+    # Ensure the current user has access to this model
+    if not uml_model.accessed_by.filter(id=request.user.id).exists():
+        messages.error(request, "You do not have permission to unshare this model.")
+        return redirect('uml-model', model_id=model_id) 
+    
+    user = get_object_or_404(User, id=user_id)
+    access_record = get_object_or_404(UserAccessToModel, user=user, model=uml_model)
+    access_record.delete()
+    messages.success(request, f"Model successfully unshared from {user.username}.")
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+

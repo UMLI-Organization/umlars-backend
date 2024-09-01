@@ -60,10 +60,11 @@ class UmlFilesTranslationQueueMessageSerializer(serializers.ModelSerializer):
 class UmlFileTranslationStatusSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     message = serializers.CharField(write_only=True, required=False)
+    process_id = serializers.CharField(source='last_process_id')
 
     class Meta:
         model = UmlFile
-        fields = ['id', 'state', 'message']
+        fields = ['id', 'state', 'message', 'process_id']
 
     def validate(self, data):
         message = data.pop('message', None)

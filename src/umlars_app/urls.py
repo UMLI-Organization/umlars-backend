@@ -21,6 +21,7 @@ urlpatterns = [
     path("bulk-upload-uml-models/", views.bulk_upload_uml_models, name="bulk-upload-uml-models"),
     path("review-bulk-upload-uml-models/", views.review_bulk_upload_uml_models, name="review-bulk-upload-uml-models"),
     path('share-model/<int:model_id>', views.share_model, name='share-model'),
+    path('unshare-model/<int:model_id>/user/<int:user_id>', views.unshare_model, name='unshare-model'),
     path('select2/', include('django_select2.urls')),  # Include the django_select2 URLs
 
 

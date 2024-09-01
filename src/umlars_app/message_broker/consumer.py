@@ -7,8 +7,9 @@ from umlars_app import settings
 from umlars_app.exceptions import QueueUnavailableError, NotYetAvailableError, InputDataError
 from umlars_app.utils.logging import get_new_sublogger
 from umlars_app.rest.serializers import UmlFileTranslationStatusSerializer
-from umlars_app.models import UmlFile
+from umlars_app.models import UmlFile, ProcessStatus
 from umlars_app.utils.connections_utils import retry
+from django.db import transaction
 
 
 class RabbitMQConsumer:
@@ -70,15 +71,26 @@ class RabbitMQConsumer:
         if (message_from_translation_service := serializer.context.get('message')):
             self._logger.info(f"Message from translation service: {message_from_translation_service}")
 
-        try:
-            uml_file = UmlFile.objects.get(id=serializer.validated_data['id'])
-        except UmlFile.DoesNotExist as ex:
-            error_message = f"Failed to get UmlFile: {ex}"
-            self._logger.error(error_message)
-            raise InputDataError(error_message) from ex
+        with transaction.atomic():
+            try:
+                uml_file = UmlFile.objects.get(id=serializer.validated_data['id'])
+            except UmlFile.DoesNotExist as ex:
+                error_message = f"Failed to get UmlFile: {ex}"
+                self._logger.error(error_message)
+                raise InputDataError(error_message) from ex
+            
+            self._logger.debug(f"Processing UmlFile: {uml_file}\n with status: {serializer.validated_data.get('state')} and current state: {uml_file.state}")
+            self._logger.debug(f"Received process ID: {serializer.validated_data.get('last_process_id')} and current last process ID: {uml_file.last_process_id}")
 
-        serializer.instance = uml_file
-        serializer.save()
+            if serializer.validated_data.get('state') == ProcessStatus.RUNNING and uml_file.state != ProcessStatus.QUEUED:
+                process_id = serializer.validated_data.get('last_process_id')
+                last_process_id = uml_file.last_process_id
+                if process_id is not None and last_process_id == process_id:
+                    self._logger.info(f"Process ID {process_id} hase already been processed. Skipping...")
+                    return
+
+            serializer.instance = uml_file
+            serializer.save()
 
     def start_consuming(self) -> None:
         try:
