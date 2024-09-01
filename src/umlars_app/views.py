@@ -9,10 +9,11 @@ from django.contrib import messages
 from django.db import transaction
 from django.forms.models import model_to_dict
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.shortcuts import get_object_or_404
 
 from umlars_app.utils.translation_utils import schedule_translate_uml_model
-from umlars_app.models import UmlModel, UmlFile, ProcessStatus
-from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm,UpdateUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm
+from umlars_app.models import UmlModel, UmlFile, ProcessStatus, UserAccessToModel, ObjectAccessLevel
+from umlars_app.forms import SignUpForm, EditUserForm, AddUmlModelForm,UpdateUmlModelForm, AddUmlFileFormset, EditUmlFileFormset, FilesGroupingForm, ExtensionsGroupingFormSet, RegexGroupingFormSet, AddUmlModelFormset, ChangePasswordForm, ShareModelForm
 from umlars_app.utils.files_utils import decode_file
 from umlars_app.utils.grouping_utils import group_files, determine_model_name
 from umlars_app.exceptions import UnsupportedFileError
@@ -128,6 +129,8 @@ def _get_translated_model(model_id: int) -> dict:
 def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
     if request.user.is_authenticated:
         uml_model = UmlModel.objects.prefetch_related("source_files").filter(accessed_by__id=request.user.id).get(id=pk)
+        form = ShareModelForm()
+        print(form.fields['user'].queryset) 
 
         try:
             translated_model = _get_translated_model(pk)
@@ -175,6 +178,7 @@ def uml_model(request: HttpRequest, pk: int) -> HttpResponse:
              "model_status": model_status,
              "status_enum": ProcessStatus,
              "model_json": model_json,
+                "form": form,
              },
         )
     else:
@@ -530,3 +534,31 @@ def change_password(request: HttpRequest) -> HttpResponse:
     else:
         messages.warning(request, "You need to be logged in to change the password.")
         return redirect("home")
+    
+
+def share_model(request: HttpRequest, model_id: int) -> HttpResponse:
+    if not request.user.is_authenticated:
+        messages.warning(request, "You need to be logged in to share a model.")
+        return redirect('home')
+    
+    uml_model = get_object_or_404(UmlModel, id=model_id)
+
+    # Ensure the current user has access to this model
+    if not uml_model.accessed_by.filter(id=request.user.id).exists():
+        messages.error(request, "You do not have permission to share this model.")
+        return redirect('uml-model', model_id=model_id)
+
+    if request.method == 'POST':
+        form = ShareModelForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data['user']
+
+            # Check if the user already has access
+            if UserAccessToModel.objects.filter(user=user, model=uml_model).exists():
+                messages.warning(request, "This user already has access to the model.")
+            else:
+                # Create a new access record
+                UserAccessToModel.objects.create(user=user, model=uml_model, access_level=ObjectAccessLevel.READ)
+                messages.success(request, f"Model successfully shared with {user.username}.")
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))

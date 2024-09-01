@@ -16,6 +16,8 @@ from django.utils.safestring import mark_safe
 from django.http import QueryDict
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.datastructures import MultiValueDict
+from django_select2.forms import ModelSelect2Widget
+from .models import UserAccessToModel
 
 from umlars_app.models import UmlModel, UmlFile, UserAccessToModel, ObjectAccessLevel
 from umlars_app.utils.files_utils import decode_file
@@ -624,8 +626,8 @@ def formset_factory_with_overriden_attributes(formset_base_class: type["forms.Ba
         for attr_name, attr_value in attributes_to_override.items():
             vars()[attr_name] = attr_value
 
-
     return FormsetWithAttributesOverriden
+
 
 def increase_forms_count_in_formset(formset: forms.BaseFormSet, increment: int) -> None:
     management_form_data = formset.management_form.initial
@@ -646,48 +648,17 @@ def increase_forms_count_in_formset(formset: forms.BaseFormSet, increment: int) 
     # formset.extra = 2
 
 
+class ShareModelForm(forms.ModelForm):
+    user = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        label="User",
+        widget=ModelSelect2Widget(
+            model=User,
+            search_fields=['username__icontains', 'first_name__icontains', 'last_name__icontains'],
+            attrs={'data-placeholder': 'Search for a user...', 'style': 'width: 100%'}
+        )
+    )
 
-# def add(formset: forms.BaseFormSet, **kwargs: Any):
-#     tfc = formset.total_form_count()
-#     formset.forms.append(formset._construct_form(tfc, **kwargs))
-#     formset.forms[tfc].is_bound = False
-
-#     # make data mutable
-#     formset.data = formset.data.copy()
-
-#     # increase hidden form counts
-#     total_count_name = '%s-%s' % (formset.management_form.prefix, TOTAL_FORM_COUNT)
-#     initial_count_name = '%s-%s' % (formset.management_form.prefix, INITIAL_FORM_COUNT)
-#     formset.data[total_count_name] = formset.management_form.cleaned_data[TOTAL_FORM_COUNT] + 1
-#     formset.data[initial_count_name] = formset.management_form.cleaned_data[INITIAL_FORM_COUNT] + 1
-
-
-# def add_form_to_formset(formset: forms.BaseFormSet, form_data: Dict[str, Any]) -> None:
-#     logger.debug(f"Method: add_form_to_formset - form_data: {form_data}")
-#     # Get the management form data
-#     management_form_data = formset.management_form.initial
-#     total_forms = int(management_form_data['TOTAL_FORMS'])
-
-#     # Increment the total forms count
-#     management_form_data['TOTAL_FORMS'] = total_forms + 1
-
-#     # Create a new form instance with initial data if needed
-#     import copy
-#     new_form = copy.deepcopy(formset.empty_form)
-#     new_form.prefix = formset.prefix
-#     new_form.initial = form_data
-
-#     # new_form = formset.empty_form
-#     # new_form.prefix = formset.prefix
-#     # new_form.initial = form_data
-    
-#     # new_form = formset.form(initial=form_data, prefix=f'{formset.prefix}-{total_forms}')
-#     logger.debug(f"Method: add_form_to_formset - new_form initial data: {new_form.initial}")
-#     # logger.info(f"New form: {new_form}")
-#     # Append the new form to the formset's forms
-#     formset.forms.append(new_form)
-
-#     # Update the formset's management form data
-#     formset.management_form.initial = management_form_data
-#     formset._total_form_count = total_forms + 1
-
+    class Meta:
+        model = UserAccessToModel
+        fields = ['user']

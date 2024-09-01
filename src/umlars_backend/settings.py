@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "corsheaders",
     'djoser',
+    'django_select2',
     # 'rest_framework.authtoken',
 
     # installed apps

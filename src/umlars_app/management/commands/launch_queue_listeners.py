@@ -14,10 +14,10 @@ class Command(BaseCommand):
     help = "Starts a multi-threaded consumer for RabbitMQ"
 
     def add_arguments(self, parser):
-        parser.add_argument("numthreads", nargs="?", type=int, default=5, help="Number of threads to use for consuming messages")
+        parser.add_argument("numthreads", nargs="?", type=int, default=1, help="Number of threads to use for consuming messages")
 
     def handle(self, *args, **options):
-        numthreads = options.get("numthreads", 5)
+        numthreads = options.get("numthreads", 1)
         self.stdout.write(f"Starting consumer with {numthreads} threads")
         logger.info("Starting consumer command called...")
 
