@@ -1,0 +1,117 @@
+[
+    {
+        "model": "umlars_app.umlmodel",
+        "pk": 1,
+        "fields": {
+            "tech_valid_from": "2024-05-05T08:11:48.370Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Sample Model",
+            "description": null,
+            "formatted_data": "{'model': {'id': 14, 'name': 'Sample Model', 'description': 'This is a sample model', 'elements': [{'id': 12, 'type': 'UmlPackage', 'elements': [{'id': 15, 'type': 'UmlInterface', 'id_ref']}], 'diagrams': [{'name': 'Class Diagram', 'elements': [{'id': 1, 'type': 'UmlClass'}, {'id': 20, 'type': 'UmlInterface']}"
+        }
+    },
+    {
+        "model": "umlars_app.umlmodel",
+        "pk": 2,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:12.321Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Tornado",
+            "description": null,
+            "formatted_data": "Some data that is not really XMI"
+        }
+    },
+    {
+        "model": "umlars_app.umlmodel",
+        "pk": 3,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:18.822Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Filip Pawłowski",
+            "description": null,
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umlars_app.umlmodel",
+        "pk": 4,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:28.690Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Majmodel",
+            "description": null,
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umlars_app.umlmodel",
+        "pk": 5,
+        "fields": {
+            "tech_valid_from": "2024-05-05T09:21:37.674Z",
+            "tech_valid_to": null,
+            "tech_active_flag": true,
+            "name": "Lasmod",
+            "description": null,
+            "formatted_data": ""
+        }
+    },
+    {
+        "model": "umlars_app.umlfile",
+        "pk": 1,
+        "fields": {
+            "data": "PHhtaTpYTUkgeG1sbnM6eG1pPSJodHRwOi8vc2NoZW1hLm9tZy5vcmcvc3BlYy9YTUkvMi4xIiB4bWk6dmVyc2lvbj0iMi4xIiB4bWxuczp1bWw9Imh0dHA6Ly9zY2hlbWEub21nLm9yZy9zcGVjL1VNTC8yLjEiPgogICAgPHhtaTpEb2N1bWVudGF0aW9uIGV4cG9ydGVyPSJFbnRlcnByaXNlIEFyY2hpdGVjdCIgZXhwb3J0ZXJWZXJzaW9uPSI2LjUiIGV4cG9ydGVySUQ9IjE2MjgiLz4KICAgIDx1bWw6TW9kZWwgeG1pOnR5cGU9InVtbDpNb2RlbCIgbmFtZT0idW5pdCBtb2RlbCIgdmlzaWJpbGl0eT0icHVibGljIj4KICAgIDwvdW1sOk1vZGVsPgogICAgPHhtaTpFeHRlbnNpb24gZXh0ZW5kZXI9IkVudGVycHJpc2UgQXJjaGl0ZWN0IiBleHRlbmRlcklEPSI2LjUiPgogICAgICAgIDxkaWFncmFtcz4KICAgICAgICAgICAgPGRpYWdyYW0geG1pOmlkPSJFQUlEXzI3M0RGOUYwXzBEMzNfNDJjMV9BODRCXzg2NDkzQUY2NjFERCI+CiAgICAgICAgICAgICAgICA8bW9kZWwgcGFja2FnZT0iRUFQS181M0ZEMzVDRV8xQUM4XzRlYjNfODM3Ql9BNDMwNDlBRUE1RkUiIGxvY2FsSUQ9IjEiIG93bmVyPSJFQVBLXzUzRkQzNUNFXzFBQzhfNGViM184MzdCX0E0MzA0OUFFQTVGRSIvPgogICAgICAgICAgICAgICAgPHByb3BlcnRpZXMgbmFtZT0iZGlhZ3JhbTEiIHR5cGU9IkxvZ2ljYWwiLz4KICAgICAgICAgICAgICAgIDxlbGVtZW50cz4KICAgICAgICAgICAgICAgIDwvZWxlbWVudHM+CiAgICAgICAgICAgIDwvZGlhZ3JhbT4KICAgICAgICA8L2RpYWdyYW1zPgogICAgPC94bWk6RXh0ZW5zaW9uPgo8L3htaTpYTUk+",
+            "filename": "sample_1.xml",
+            "format": "xmi_ea",
+            "model": 1,
+            "date_uploaded": "2024-05-05T08:11:48.370Z"
+        }
+    },
+    {
+        "model": "umlars_app.umlfile",
+        "pk": 2,
+        "fields": {
+            "data": "PHhtaTpYTUkgeG1sbnM6eG1pPSJodHRwOi8vc2NoZW1hLm9tZy5vcmcvc3BlYy9YTUkvMi4xIiB4bWk6dmVyc2lvbj0iMi4xIiB4bWxuczp1bWw9Imh0dHA6Ly9zY2hlbWEub21nLm9yZy9zcGVjL1VNTC8yLjEiPgogICAgPHhtaTpEb2N1bWVudGF0aW9uIGV4cG9ydGVyPSJFbnRlcnByaXNlIEFyY2hpdGVjdCIgZXhwb3J0ZXJWZXJzaW9uPSI2LjUiIGV4cG9ydGVySUQ9IjE2MjgiLz4KICAgIDx1bWw6TW9kZWwgeG1pOnR5cGU9InVtbDpNb2RlbCIgbmFtZT0idW5pdCBtb2RlbCIgdmlzaWJpbGl0eT0icHVibGljIj4KICAgIDwvdW1sOk1vZGVsPgogICAgPHhtaTpFeHRlbnNpb24gZXh0ZW5kZXI9IkVudGVycHJpc2UgQXJjaGl0ZWN0IiBleHRlbmRlcklEPSI2LjUiPgogICAgICAgIDxkaWFncmFtcz4KICAgICAgICAgICAgPGRpYWdyYW0geG1pOmlkPSJFQUlEXzI3M0RGOUYwXzBEMzNfNDJjMV9BODRCXzg2NDkzQUY2NjFERCI+CiAgICAgICAgICAgICAgICA8bW9kZWwgcGFja2FnZT0iRUFQS181M0ZEMzVDRV8xQUM4XzRlYjNfODM3Ql9BNDMwNDlBRUE1RkUiIGxvY2FsSUQ9IjEiIG93bmVyPSJFQVBLXzUzRkQzNUNFXzFBQzhfNGViM184MzdCX0E0MzA0OUFFQTVGRSIvPgogICAgICAgICAgICAgICAgPHByb3BlcnRpZXMgbmFtZT0iZGlhZ3JhbTEiIHR5cGU9IkxvZ2ljYWwiLz4KICAgICAgICAgICAgICAgIDxlbGVtZW50cz4KICAgICAgICAgICAgICAgIDwvZWxlbWVudHM+CiAgICAgICAgICAgIDwvZGlhZ3JhbT4KICAgICAgICA8L2RpYWdyYW1zPgogICAgPC94bWk6RXh0ZW5zaW9uPgo8L3htaTpYTUk+",
+            "filename": "sample_1_aZvRkvh.xml",
+            "format": "xmi_ea",
+            "model": 2,
+            "date_uploaded": "2024-05-05T09:21:12.321Z"
+        }
+    },
+    {
+        "model": "umlars_app.umlfile",
+        "pk": 3,
+        "fields": {
+            "data": "PHhtaTpYTUkgeG1sbnM6eG1pPSJodHRwOi8vc2NoZW1hLm9tZy5vcmcvc3BlYy9YTUkvMi4xIiB4bWk6dmVyc2lvbj0iMi4xIiB4bWxuczp1bWw9Imh0dHA6Ly9zY2hlbWEub21nLm9yZy9zcGVjL1VNTC8yLjEiPgogICAgPHhtaTpEb2N1bWVudGF0aW9uIGV4cG9ydGVyPSJFbnRlcnByaXNlIEFyY2hpdGVjdCIgZXhwb3J0ZXJWZXJzaW9uPSI2LjUiIGV4cG9ydGVySUQ9IjE2MjgiLz4KICAgIDx1bWw6TW9kZWwgeG1pOnR5cGU9InVtbDpNb2RlbCIgbmFtZT0idW5pdCBtb2RlbCIgdmlzaWJpbGl0eT0icHVibGljIj4KICAgIDwvdW1sOk1vZGVsPgogICAgPHhtaTpFeHRlbnNpb24gZXh0ZW5kZXI9IkVudGVycHJpc2UgQXJjaGl0ZWN0IiBleHRlbmRlcklEPSI2LjUiPgogICAgICAgIDxkaWFncmFtcz4KICAgICAgICAgICAgPGRpYWdyYW0geG1pOmlkPSJFQUlEXzI3M0RGOUYwXzBEMzNfNDJjMV9BODRCXzg2NDkzQUY2NjFERCI+CiAgICAgICAgICAgICAgICA8bW9kZWwgcGFja2FnZT0iRUFQS181M0ZEMzVDRV8xQUM4XzRlYjNfODM3Ql9BNDMwNDlBRUE1RkUiIGxvY2FsSUQ9IjEiIG93bmVyPSJFQVBLXzUzRkQzNUNFXzFBQzhfNGViM184MzdCX0E0MzA0OUFFQTVGRSIvPgogICAgICAgICAgICAgICAgPHByb3BlcnRpZXMgbmFtZT0iZGlhZ3JhbTEiIHR5cGU9IkxvZ2ljYWwiLz4KICAgICAgICAgICAgICAgIDxlbGVtZW50cz4KICAgICAgICAgICAgICAgIDwvZWxlbWVudHM+CiAgICAgICAgICAgIDwvZGlhZ3JhbT4KICAgICAgICA8L2RpYWdyYW1zPgogICAgPC94bWk6RXh0ZW5zaW9uPgo8L3htaTpYTUk+",
+            "filename": "sample_1_VrdcCq1.xml",
+            "format": "xmi_ea",
+            "model": 3,
+            "date_uploaded": "2024-05-05T09:21:18.822Z"
+        }
+    },
+    {
+        "model": "umlars_app.umlfile",
+        "pk": 4,
+        "fields": {
+            "data": "PHhtaTpYTUkgeG1sbnM6eG1pPSJodHRwOi8vc2NoZW1hLm9tZy5vcmcvc3BlYy9YTUkvMi4xIiB4bWk6dmVyc2lvbj0iMi4xIiB4bWxuczp1bWw9Imh0dHA6Ly9zY2hlbWEub21nLm9yZy9zcGVjL1VNTC8yLjEiPgogICAgPHhtaTpEb2N1bWVudGF0aW9uIGV4cG9ydGVyPSJFbnRlcnByaXNlIEFyY2hpdGVjdCIgZXhwb3J0ZXJWZXJzaW9uPSI2LjUiIGV4cG9ydGVySUQ9IjE2MjgiLz4KICAgIDx1bWw6TW9kZWwgeG1pOnR5cGU9InVtbDpNb2RlbCIgbmFtZT0idW5pdCBtb2RlbCIgdmlzaWJpbGl0eT0icHVibGljIj4KICAgIDwvdW1sOk1vZGVsPgogICAgPHhtaTpFeHRlbnNpb24gZXh0ZW5kZXI9IkVudGVycHJpc2UgQXJjaGl0ZWN0IiBleHRlbmRlcklEPSI2LjUiPgogICAgICAgIDxkaWFncmFtcz4KICAgICAgICAgICAgPGRpYWdyYW0geG1pOmlkPSJFQUlEXzI3M0RGOUYwXzBEMzNfNDJjMV9BODRCXzg2NDkzQUY2NjFERCI+CiAgICAgICAgICAgICAgICA8bW9kZWwgcGFja2FnZT0iRUFQS181M0ZEMzVDRV8xQUM4XzRlYjNfODM3Ql9BNDMwNDlBRUE1RkUiIGxvY2FsSUQ9IjEiIG93bmVyPSJFQVBLXzUzRkQzNUNFXzFBQzhfNGViM184MzdCX0E0MzA0OUFFQTVGRSIvPgogICAgICAgICAgICAgICAgPHByb3BlcnRpZXMgbmFtZT0iZGlhZ3JhbTEiIHR5cGU9IkxvZ2ljYWwiLz4KICAgICAgICAgICAgICAgIDxlbGVtZW50cz4KICAgICAgICAgICAgICAgIDwvZWxlbWVudHM+CiAgICAgICAgICAgIDwvZGlhZ3JhbT4KICAgICAgICA8L2RpYWdyYW1zPgogICAgPC94bWk6RXh0ZW5zaW9uPgo8L3htaTpYTUk+",
+            "filename": "MODEL_XMI_jmugPLd.xml",
+            "format": "xmi_ea",
+            "model": 4,
+            "date_uploaded": "2024-05-05T09:21:28.690Z"
+        }
+    },
+    {
+        "model": "umlars_app.umlfile",
+        "pk": 5,
+        "fields": {
+            "data": "PHhtaTpYTUkgeG1sbnM6eG1pPSJodHRwOi8vc2NoZW1hLm9tZy5vcmcvc3BlYy9YTUkvMi4xIiB4bWk6dmVyc2lvbj0iMi4xIiB4bWxuczp1bWw9Imh0dHA6Ly9zY2hlbWEub21nLm9yZy9zcGVjL1VNTC8yLjEiPgogICAgPHhtaTpEb2N1bWVudGF0aW9uIGV4cG9ydGVyPSJFbnRlcnByaXNlIEFyY2hpdGVjdCIgZXhwb3J0ZXJWZXJzaW9uPSI2LjUiIGV4cG9ydGVySUQ9IjE2MjgiLz4KICAgIDx1bWw6TW9kZWwgeG1pOnR5cGU9InVtbDpNb2RlbCIgbmFtZT0idW5pdCBtb2RlbCIgdmlzaWJpbGl0eT0icHVibGljIj4KICAgIDwvdW1sOk1vZGVsPgogICAgPHhtaTpFeHRlbnNpb24gZXh0ZW5kZXI9IkVudGVycHJpc2UgQXJjaGl0ZWN0IiBleHRlbmRlcklEPSI2LjUiPgogICAgICAgIDxkaWFncmFtcz4KICAgICAgICAgICAgPGRpYWdyYW0geG1pOmlkPSJFQUlEXzI3M0RGOUYwXzBEMzNfNDJjMV9BODRCXzg2NDkzQUY2NjFERCI+CiAgICAgICAgICAgICAgICA8bW9kZWwgcGFja2FnZT0iRUFQS181M0ZEMzVDRV8xQUM4XzRlYjNfODM3Ql9BNDMwNDlBRUE1RkUiIGxvY2FsSUQ9IjEiIG93bmVyPSJFQVBLXzUzRkQzNUNFXzFBQzhfNGViM184MzdCX0E0MzA0OUFFQTVGRSIvPgogICAgICAgICAgICAgICAgPHByb3BlcnRpZXMgbmFtZT0iZGlhZ3JhbTEiIHR5cGU9IkxvZ2ljYWwiLz4KICAgICAgICAgICAgICAgIDxlbGVtZW50cz4KICAgICAgICAgICAgICAgIDwvZWxlbWVudHM+CiAgICAgICAgICAgIDwvZGlhZ3JhbT4KICAgICAgICA8L2RpYWdyYW1zPgogICAgPC94bWk6RXh0ZW5zaW9uPgo8L3htaTpYTUk+",
+            "filename": "sample_1_LWIYHCC.xml",
+            "format": "xmi_ea",
+            "model": 5,
+            "date_uploaded": "2024-05-05T09:21:37.674Z"
+        }
+    }
+]

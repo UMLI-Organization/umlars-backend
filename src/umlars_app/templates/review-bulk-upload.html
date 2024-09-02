@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% load iter_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="col-md-12">
+        <h1 class="mb-4 mt-4">Review Detected UML Models</h1>
+        
+        <form method="POST" enctype="multipart/form-data" class="needs-validation" action="{% url 'review-bulk-upload-uml-models' %}">
+            {% csrf_token %}
+            
+            {{ model_formset.management_form }}
+            
+            <div class="alert alert-info" role="alert">
+                Review the detected UML models and their corresponding files below. You can make changes if necessary before submitting.
+            </div>
+
+            
+            <div class="mt-4">
+                <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary mb-4">Back</a>
+                <button type="submit" class="btn btn-primary mb-4">Submit All Models</button>
+            </div>
+
+            {% for model_form, file_formset in model_forms_with_file_formsets %}
+                <div class="model-form-container border rounded p-3 mb-4 bg-light">
+                    <h5>Model: {{ model_form.name.value }}</h5>
+                    {{ model_form.id }}
+                    {% render_model_upload_form_fields model_form file_formset %}
+                    
+                    <div class="w-100 d-flex justify-content-end model-form-container__delete-section">
+                        <div class="d-none">
+                            {{ model_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+                        </div>
+                        <button type="button" class="btn btn-danger model-form-container__delete-model-button me-2">Delete UML Model</button>
+                    </div>
+                </div>
+            {% endfor %}
+            
+        </form>
+    </div>
+</div>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- TODO: doesnt work -->
+<script>
+    $(document).ready(function() {
+        const formsetPrefix = "{{ model_formset.prefix }}";
+        const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
+        const totalForms = $(`#${totalFormsInputId}`);
+
+        // Event delegation to handle delete model button clicks for model forms
+        $(document).on('click', '.model-form-container__delete-model-button', function(e) {
+            let formNum = parseInt(totalForms.val());
+            e.preventDefault();
+            const formContainer = $(this).closest('.model-form-container');
+            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+            formContainer.remove();
+            totalForms.val(formNum - 1);
+        });
+
+    });
+</script>
+{% endblock %}

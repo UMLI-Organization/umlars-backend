@@ -1,4 +1,4 @@
-site_name: umli-backend
+site_name: umlars-backend
 theme:
   name: mkdocs
   nav_style: dark

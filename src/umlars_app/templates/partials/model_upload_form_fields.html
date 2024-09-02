@@ -1,0 +1,86 @@
+{% load form_tags %}
+{% load iter_tags %}
+
+{% render_form_with_errors form %}
+    
+<div class="formset-container mt-4" id="formset-container-{{ formset.prefix }}">
+    <h6>Associated Files:</h6>
+    {{ formset.management_form }}
+    {% for file_form in formset %}
+        <div class="formset-container__form-container mb-3 border rounded p-3">
+            {% render_form_with_errors file_form %}
+            <button type="button" class="btn btn-danger delete-form-btn mt-2">Delete</button>
+            <div class="d-none">
+                {{ file_form.DELETE }}  
+                <!-- This is the hidden delete checkbox for file -->
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div>
+    <button type="button" id="add-file-{{ formset.prefix }}" class="btn btn-success add-file-btn">+ Add Another File</button>
+</div>
+
+
+
+<!-- Hidden template for a new form -->
+<div id="empty-form-{{ formset.prefix }}" class="d-none">
+    <div class="formset-container__form-container mb-3 border rounded p-3">
+        {% render_form_with_errors formset.empty_form %}
+        <button type="button" class="btn btn-danger delete-form-btn mt-4">Delete</button>
+        <div class="d-none">
+            {{ formset.empty_form.DELETE }}  <!-- This is the hidden delete checkbox -->
+        </div>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const formsetPrefix = "{{ formset.prefix }}";
+        const totalFormsInputId = `id_${formsetPrefix}-TOTAL_FORMS`;
+        const formsetContainer = $(`#formset-container-${formsetPrefix}`);
+        const addButton = $(`#add-file-${formsetPrefix}`);
+        const totalForms = $(`#${totalFormsInputId}`);
+
+        addButton.on('click', function(e) {
+            e.preventDefault();
+            // Get the current number of forms
+            let formNum = parseInt(totalForms.val());
+            console.log("Add new form with num: " + formNum)
+             // Clone the empty form template
+            let newForm = $(`#empty-form-${formsetPrefix}`).html().replace(/__prefix__/g, formNum);
+            // Append the new form to the formset container
+            formsetContainer.append(newForm);
+            // Increment the total forms count
+            totalForms.val(formNum + 1);
+        });
+
+        // Event delegation to handle delete button clicks for dynamically added forms
+        formsetContainer.on('click', '.delete-form-btn', function() {
+            const formContainer = $(this).closest('.formset-container__form-container');
+            formContainer.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+            formContainer.hide();
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        const specificDivClass = '.formset-container__form-container';
+
+        // Event delegation to handle file input change for dynamically added forms
+        $(document).on('change', `${specificDivClass} .file-input`, function() {
+            const fileInput = $(this);
+            const filenameInput = fileInput.closest(specificDivClass).find('.filename-input');
+
+            if (fileInput.val()) {
+                filenameInput.val('');
+                filenameInput.prop('readonly', true);
+            } else {
+                filenameInput.prop('readonly', false);
+            }
+        });
+    });
+</script>

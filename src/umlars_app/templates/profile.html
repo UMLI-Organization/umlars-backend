@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+
+{% block content %}
+
+<div class="col-md-6 offset-md-3"> 
+    <h1 class="mb-4 mt-4">Profile</h1>
+
+    <form method="POST" action="{% url 'profile' %}">
+        {% csrf_token %}
+        
+        {% render_formatted_form_inline form %}
+
+        <button type="submit" class="btn btn-secondary mt-4 mb-4">Update</button>
+        <a href="{% url 'delete-current-user' %}" class="btn btn-danger mt-4 mb-4">Delete User</a>
+
+    </form>
+</div>
+
+
+{% endblock %}

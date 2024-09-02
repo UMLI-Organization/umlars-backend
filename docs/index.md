@@ -1,7 +1,9 @@
-# umli-backend
-Python library umli-backend documentation
+# umlars-backend
+
+Python library umlars-backend documentation
 
 ## Project layout
+
     .
     ├── Makefile
     ├── README.md
@@ -15,5 +17,5 @@ Python library umli-backend documentation
     │   ├── __init__.py
     │   └── sample_test.py
     ├── tox.ini
-    └── umli-backend
+    └── umlars-backend
         └── __init__.py

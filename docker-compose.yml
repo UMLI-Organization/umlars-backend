@@ -1,19 +1,27 @@
-version: '3.8'
+version: "3.8"
 services:
   backend:
-    image: "umli-backend:dev"
+    image: "umlars-backend:dev"
     build:
-      target: umli_backend_dev_build
+      target: umlars_backend_dev_build
       context: .
       cache_from:
-        - "umli-backend:dev"
-        - "umli-backend:latest"
+        - "umlars-backend:dev"
+        - "umlars-backend:latest"
         - "*"
       args:
-        UMLI_IN_ENV: DEV
+        UMLARS_IN_ENV: DEV
     # TODO: Change to production version when released
     # command: make django-start
     command: make django-start-dev
+
+    # TODO: Remove this volume mapping in production
+    volumes:
+      - .:/code
+
+    networks:
+      - net-backend
+
     ports:
       - 8000:8000
     env_file:
@@ -21,22 +29,48 @@ services:
     depends_on:
       - db
 
-    # TODO: Remove this volume mapping in production 
-    volumes:
-      - .:/code
-  
   db:
     image: postgres:12.0-alpine
     restart: unless-stopped
+    command: postgres -c 'max_connections=340'
 
     # Changing env variables won't work, if volume was already created
     # Source: https://hub.docker.com/_/postgres#:~:text=have%20found%20useful.-,Environment%20Variables,-The%20PostgreSQL%20image
     volumes:
       - db_postgres_data:/var/lib/postgresql/data/
+
+    networks:
+      - net-backend
+
     env_file:
       - ./.env.dev
     ports:
       - 50432:5432
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia/
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+    networks:
+      - net-backend
+
+    env_file:
+      - ./.env.dev
+
+    restart: always
+
 volumes:
+  rabbitmq_data:
   db_postgres_data:
+
+networks:
+  net-backend:
+    driver: bridge
+    name: umlars-net-backend

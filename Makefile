@@ -35,16 +35,18 @@ django-migrate:
 django-start-dev:
 	poetry run python -Wd src/manage.py makemigrations
 	poetry run python -Wd src/manage.py migrate
-	poetry run python -Wd src/manage.py createsuperuser --noinput \
-	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
-	poetry run python -Wd src/manage.py loaddata src/umli_app/fixtures/uml_models_data.json
+	poetry run python -Wd src/manage.py create_superuser_if_none_exists \
+	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL} --password ${DJANGO_SUPERUSER_PASSWORD}
+	poetry run python -Wd src/manage.py loaddata src/umlars_app/fixtures/uml_models_data.json
+	nohup poetry run python -Wd src/manage.py launch_queue_listeners > logs/queue_listeners.log 2>&1 &
 	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
 django-start:
 	poetry run python -Wd src/manage.py makemigrations
 	poetry run python -Wd src/manage.py migrate
-	poetry run python -Wd src/manage.py createsuperuser --noinput \
+	poetry run python -Wd src/manage.py create_superuser_if_none_exists \
 	 --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL}
+	nohup poetry run python -Wd src/manage.py launch_queue_listeners > logs/queue_listeners.log 2>&1 &
 	poetry run python -Wd src/manage.py runserver 0.0.0.0:8000
 
 

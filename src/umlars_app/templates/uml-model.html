@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% load status_tags %}
+{% load json_tags %}
+
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ uml_model.name }} UML Model</h1>
+
+    <div class="row">
+        <!-- XML Content Column -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="card-title mb-0">File Content</h4>
+                    {% if uml_model.source_files %}
+                        <a href="{{ uml_model.source_files.url }}" class="link-light">{{ uml_model.source_files.url }}</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <pre class="language-json"><code>{{ model_json|pretty_json }}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metadata Sidebar -->
+        <div class="col-md-4 mb-4">
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="card-title mb-0">Metadata</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group
+                        list-group-flush">
+                        <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Created:</strong>
+                            <span>{{ uml_model.tech_valid_from }}</span>
+                        </li>
+                        <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Status:</strong>
+                            {% render_status model_status status_enum model_status.name 'fs-5' %}
+                        </li>
+                        <li class="list-group list-group-item d-flex flex-column">
+                            <strong>Shared with:</strong>
+                            {% for user in uml_model.accessed_by.all %}
+                                <div class="d-flex align-items-center justify-content-between mt-2">
+                                    <span>{{ user }}</span>
+                                    <a href="{% url 'unshare-model' uml_model.id user.id %}" class="btn btn-link p-0" style="color: red;">
+                                        <span class="glyphicon glyphicon-ban-circle" title="Remove access">[Unshare]</span>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </li>
+                        <!-- <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Shared with:</strong>
+                            {% for user in uml_model.accessed_by.all %}
+                                <div>
+                                    <span class="mt-2"> {{ user }} </span>
+                                    <a href="{% url 'unshare-model' uml_model.id user.id %}" class="btn mt-0">
+                                        <span class="glyphicon glyphicon-ban-circle" style="color: red;" title="Remove access">[Unshare]</span>
+                                    </a>
+                                </span>
+                            {% endfor %}
+                        </li> -->
+                        <li class="list-group
+                            list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Files:</strong>
+                            <ul class="list-group">
+                                {% for file in uml_model.source_files.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="d-flex me-4 align-items-center">
+                                        {% render_status file.state status_enum %}
+                                    </span>
+                                    <span>
+                                        {{ file.filename }}
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+            <a href="{% url 'translate-uml-model' uml_model.id %}" class="btn btn-primary">Translate</a>
+            <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-secondary">Back</a>
+            <a href="{% url 'update-uml-model' uml_model.id %}" class="btn btn-secondary">Edit</a>
+            <a href="{% url 'delete-uml-model' uml_model.id %}" class="btn btn-danger">Delete</a>
+
+
+            <h5 class="mt-4">Share with:</h5>
+            <form method="post" action="{% url 'share-model' uml_model.id %}" class="d-flex align-items-center">
+                {% csrf_token %}
+                <select name="user" id="user-select" class="form-control me-2">
+                    {% for user in form.fields.user.queryset %}
+                        <option value="{{ user.id }}">
+                            {{ user.username }} 
+                            {% if user in uml_model.accessed_by.all %}
+                                (shared)
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-success">Share</button>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+{% endblock %}
