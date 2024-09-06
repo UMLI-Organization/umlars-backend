@@ -508,7 +508,7 @@ def review_bulk_upload_uml_models(request: HttpRequest) -> HttpResponse:
                     'empty_file_form': AddUmlFileFormset().empty_form,
                 })
         else:
-            logger.warning(request, "Only POST supported.")
+            logger.warning("Only POST supported.")
             messages.warning(request, "Only POST requests supported.")
             model_formset = AddUmlModelFormset(prefix=umlars_app.settings.ADD_UML_MODELS_FORMSET_PREFIX, form_kwargs={"user": request.user})
             return render(request, 'review-bulk-upload.html', {
@@ -550,7 +550,7 @@ def share_model(request: HttpRequest, model_id: int) -> HttpResponse:
     # Ensure the current user has access to this model
     if not uml_model.accessed_by.filter(id=request.user.id).exists():
         messages.error(request, "You do not have permission to share this model.")
-        return redirect('uml-model', model_id=model_id)
+        return redirect('uml-model', pk=model_id)
 
     if request.method == 'POST':
         form = ShareModelForm(request.POST)
@@ -578,7 +578,7 @@ def unshare_model(request: HttpRequest, model_id: int, user_id: int) -> HttpResp
     # Ensure the current user has access to this model
     if not uml_model.accessed_by.filter(id=request.user.id).exists():
         messages.error(request, "You do not have permission to unshare this model.")
-        return redirect('uml-model', model_id=model_id) 
+        return redirect('uml-model', pk=model_id) 
     
     user = get_object_or_404(User, id=user_id)
     access_record = get_object_or_404(UserAccessToModel, user=user, model=uml_model)

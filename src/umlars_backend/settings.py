@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from datetime import timedelta
 
 from django.contrib.messages import constants as messages_constants
@@ -126,16 +127,25 @@ WSGI_APPLICATION = "umlars_backend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("DB_ENGINE"),
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
+        "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.environ.get("DB_NAME", "default_db_name"),
+        "USER": os.environ.get("DB_USER", "default_user"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "default_password"),
         # For tests outside the docker compose - "HOST": "127.0.0.1",
-        "HOST": os.environ.get("DB_HOST"),
+        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         # For tests outside the docker compose - "PORT": "50432",
-        "PORT": os.environ.get("DB_PORT"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
+
+
+if 'test' in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
